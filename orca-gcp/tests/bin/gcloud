@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# Stub de gcloud para pruebas: NO toca GCP. Registra cada llamada en $FAKE_GCLOUD_LOG.
+# FAKE_GCLOUD_EXISTS: lista separada por comas de recursos "existentes"
+#   (vm, secret, secret-version, sa, sched, snappol, disk).
+set -euo pipefail
+echo "gcloud $*" >>"${FAKE_GCLOUD_LOG:?}"
+has() { [[ ",${FAKE_GCLOUD_EXISTS:-}," == *",$1,"* ]]; }
+nf() { echo "ERROR: (gcloud) NOT_FOUND: $1 was not found" >&2; exit 1; }
+# exists_or_nf RECURSO: imprime "ok" si existe; si no, error NOT_FOUND (como gcloud)
+exists_or_nf() { if has "$1"; then echo ok; else nf "$1"; fi; }
+print_if() { if has "$1"; then echo "$2"; fi; }
+case "$*" in
+  "compute instances describe"*)        exists_or_nf vm ;;
+  "compute disks describe"*)            exists_or_nf disk ;;
+  "secrets describe"*)                  exists_or_nf secret ;;
+  "secrets versions list"*)             print_if secret-version 1 ;;
+  "iam service-accounts describe"*)     exists_or_nf sa ;;
+  *"resource-policies describe orca-horario"*)   exists_or_nf sched ;;
+  *"resource-policies describe orca-snapshots"*) exists_or_nf snappol ;;
+  "compute snapshots list"*)            print_if snapshots orca-cliente-a-snap-1 ;;
+  *describe*)                           echo "ERROR: (gcloud) PERMISSION_DENIED: no autenticado" >&2; exit 1 ;;
+  *)                                    exit 0 ;;
+esac
