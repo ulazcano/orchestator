@@ -65,3 +65,4 @@ usando su cuenta de servicio (rol `roles/secretmanager.secretAccessor` solo sobr
 Actualiza esta sección en tu PR con una línea por hito (fecha, workspace, qué quedó listo).
 
 - 2026-11-09 · setup · Repo inicializado con spec y plan.
+- 2026-11-09 · ws3 · Parte A lista en PR: `verify-client.sh` (solo lectura, `--dry-run`, shellcheck limpio, lógica probada con `gcloud` simulado), `docs/verificacion.md` (checklist Fase 5 con resultados vacíos) y `docs/comandos-mac-auth.md` (marco de clasificación + bloque de recolección; **bloqueado** a la espera de que el dueño pegue las salidas del Mac: sin `RunLocalCommand`). Parte B (ejecución real) pendiente de que exista `orca-cliente-a`.
