@@ -65,3 +65,4 @@ usando su cuenta de servicio (rol `roles/secretmanager.secretAccessor` solo sobr
 Actualiza esta sección en tu PR con una línea por hito (fecha, workspace, qué quedó listo).
 
 - 2026-11-09 · setup · Repo inicializado con spec y plan.
+- 2026-11-09 · ws2 · Docs, costos y horario: `schedule-client.sh` (probado con `--dry-run`, shellcheck limpio), `pasos-manuales.md`, `costos.md` y `README.md` listos en PR. Pendiente del dueño: confirmar auto-apagado por inactividad (solo propuesto) y elegir cuenta de facturación/monto del presupuesto. TODO ws1: disco con `provisioned-iops=3000,provisioned-throughput=140` (ahorra ≈ $18/mes) e invocar `schedule-client.sh` desde `create-client.sh`.
