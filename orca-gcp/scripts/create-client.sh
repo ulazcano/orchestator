@@ -4,9 +4,10 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 STARTUP_SCRIPT="${SCRIPT_DIR}/vm-startup.sh"
-BOOTSTRAP_SCRIPT="${SCRIPT_DIR}/bootstrap-project.sh"   # lo posee el workspace 0
+BOOTSTRAP_SCRIPT="${BOOTSTRAP_SCRIPT:-${SCRIPT_DIR}/bootstrap-project.sh}"   # lo posee el workspace 0 (override: pruebas)
 
 # shellcheck source=lib.sh
+# shellcheck source-path=SCRIPTDIR
 source "${SCRIPT_DIR}/lib.sh"
 
 usage() {
