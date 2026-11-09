@@ -65,3 +65,4 @@ usando su cuenta de servicio (rol `roles/secretmanager.secretAccessor` solo sobr
 Actualiza esta sección en tu PR con una línea por hito (fecha, workspace, qué quedó listo).
 
 - 2026-11-09 · setup · Repo inicializado con spec y plan.
+- 2026-11-09 · ws0 · Fase 0 completa: diagnóstico en `orca-gcp/docs/diagnostico.md` (facturación vinculada; Compute/IAP/Secret Manager aún sin habilitar; Orca estable v1.4.255, Mac en 1.4.251).
