@@ -88,3 +88,20 @@ Los remote servers están marcados **beta** en la doc.
 9. **IP externa efímera** (necesaria para salida a internet) implica una IP pública en cada VM, aunque sin
    reglas de ingreso. Alternativa sin IP externa + Cloud NAT: ver `scripts/bootstrap-project.sh` (Fase 1).
 10. **Repo público:** no incluir IDs de facturación, números de proyecto ni nombres de tailnet.
+
+## 5. Actualización: Fase 1 aplicada (2026-11-09, con confirmación del dueño)
+
+Se ejecutó `scripts/bootstrap-project.sh` por pasos (`apis`, `network`, `firewall`, `purge-default-network`).
+
+| Recurso | Estado verificado |
+|---------|-------------------|
+| APIs `compute`, `iap`, `secretmanager` | habilitadas |
+| VPC `orca-vpc` (custom) + `orca-subnet` 10.10.0.0/24, us-central1, Private Google Access | creadas |
+| Regla `orca-allow-iap-ssh` (35.235.240.0/20, tcp:22, tag `orca`) | creada; **única regla de ingreso del proyecto** |
+| Red `default` y sus 4 reglas públicas (SSH, RDP, ICMP, internal) | **borradas** (Compute las había creado al habilitarse) |
+| Reejecución de `all` y `purge-default-network` | idempotente: omite lo existente |
+| `client-sa <slug>` | **no aplicado**: exige que exista el secreto `tailscale-authkey-<slug>` (lo crea `create-client.sh`, ws1) |
+
+Cuotas de us-central1 (solo lectura): zona `us-central1-a` UP, `n4-standard-8` disponible,
+CPUS 0/200, IN_USE_ADDRESSES 0/8. La cuota específica de N4 y de Hyperdisk Balanced **no aparece**
+en `regions describe`; queda por confirmar creando la VM piloto (si falla, revisar Quotas en consola).
