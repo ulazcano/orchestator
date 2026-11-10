@@ -101,6 +101,14 @@ EOS
 chmod +x /tmp/fakebin/curl
 out="$(PATH=/tmp/fakebin:$PATH bash -c 'source '"$SCRIPT"'; step_orca_install' 2>&1)"; rc=$?
 [[ $rc -ne 0 ]] && grep -q "no coincide" <<<"$out" && ok "sha512 incorrecto: aborta sin instalar" || fail "checksum corrupto no detectado" "$out"
+# latest-linux.yml no descargable: NO se instala sin verificar (falla cerrada)
+cat >/tmp/fakebin/curl <<EOS
+#!/usr/bin/env bash
+if [[ "\$*" == *latest-linux.yml* ]]; then exit 22; fi
+exec $REAL_CURL "\$@"
+EOS
+out="$(PATH=/tmp/fakebin:$PATH bash -c 'source '"$SCRIPT"'; step_orca_install' 2>&1)"; rc=$?
+[[ $rc -ne 0 ]] && grep -q "no se instala sin verificar" <<<"$out" && ok "sin latest-linux.yml: falla cerrada (no instala sin verificar)" || fail "checksum falla abierta" "$out"
 # parseo de latest-linux.yml
 printf 'hola\n' >/tmp/f.bin; exp="$(openssl dgst -sha512 -binary /tmp/f.bin | base64 -w0)"
 printf 'version: 1\nfiles:\n  - url: otro.deb\n    sha512: AAAA\n  - url: f.bin\n    sha512: %s\n    size: 5\n' "$exp" >/tmp/l.yml
@@ -147,6 +155,13 @@ rm -f /tmp/fk/up; touch /tmp/fk/no-secret; : >"$STARTUP_LOG"
 out="$(ORCA_TS_WAIT_SECS=0 PATH=/tmp/fk:$PATH bash -c 'source '"$SCRIPT"'; CLIENT=cliente-a; run_step tailscale-up step_tailscale_up tailscale_is_up' 2>&1)"
 grep -q ' FAIL tailscale-up' "$STARTUP_LOG" && grep -q 'secrets versions add' <<<"$out" && ok "sin valor en el secreto: FAIL con instrucciones (no se cuelga)" || fail "manejo de secreto vacío" "$out"
 export STARTUP_LOG=/var/log/orca-startup.log
+
+echo "== 7b. Cambio de versión con el paquete en hold =="
+OLD_VER=1.4.254
+ORCA_VERSION=$OLD_VER bash "$SCRIPT" >/tmp/run4.out 2>&1; rc=$?
+[[ $rc -eq 0 ]] && ok "ORCA_VERSION=$OLD_VER sobre una instalación en hold: termina con 0" || fail "cambio de versión rc=$rc" "$(grep -iE 'held|error|E:' /tmp/run4.out | head)"
+[[ "$(dpkg -s orca-ide 2>/dev/null | awk '/^Version:/ {print $2}')" == "$OLD_VER"* ]] && ok "orca-ide quedó en $OLD_VER" || fail "versión tras el cambio" "$(dpkg -s orca-ide | head -4)"
+apt-mark showhold | grep -qx orca-ide && ok "el paquete vuelve a quedar en hold" || fail "sin hold tras el cambio de versión"
 
 echo "== 8. Experimento: ¿acepta el tailscale real '--auth-key=file:/dev/fd/3'? (key falsa) =="
 if command -v tailscaled >/dev/null; then

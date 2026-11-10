@@ -100,6 +100,10 @@ out="$("${SCRIPTS}/create-client.sh" cliente-a --dry-run --foo 2>&1)"; rc=$?
 [[ $rc -ne 0 ]] && ok "flag desconocido rechazado" || fail "flag desconocido aceptado"
 out="$("${SCRIPTS}/create-client.sh" cliente-a n4-standard-8 10 --dry-run 2>&1)"; rc=$?
 [[ $rc -ne 0 ]] && ok "disco < 50 GB rechazado" || fail "disk-gb inválido aceptado"
+out="$("${SCRIPTS}/create-client.sh" cliente-a n4-standard-8 0200 --dry-run 2>&1)"; rc=$?
+[[ $rc -ne 0 ]] && ok "disk-gb con cero inicial rechazado" || fail "disk-gb '0200' aceptado"
+out="$(ORCA_VERSION=1.4.255-rc.1 "${SCRIPTS}/create-client.sh" cliente-a --dry-run 2>&1)"; rc=$?
+[[ $rc -ne 0 ]] && ok "ORCA_VERSION con sufijo rc rechazada (vm-startup.sh solo acepta X.Y.Z)" || fail "ORCA_VERSION con sufijo aceptada"
 out="$("${SCRIPTS}/create-client.sh" cliente-a e2-standard-4 120 --dry-run 2>&1)"
 contains "$out" "--machine-type=e2-standard-4" && contains "$out" "--boot-disk-size=120GB" && ok "machine-type y disk-gb posicionales" || fail "argumentos posicionales"
 
@@ -107,7 +111,23 @@ echo "== create-client con stub de gcloud (modo real, sin GCP) =="
 reset_log
 out="$("${FAKE[@]}" FAKE_GCLOUD_EXISTS=vm "${SCRIPTS}/create-client.sh" cliente-a 2>&1)"; rc=$?
 [[ $rc -eq 0 ]] && contains "$out" "ya existe" && ! logged "instances create" && ! logged "secrets create" \
-  && ok "VM existente: lo dice, sale con 0 y no crea nada" || fail "idempotencia con VM existente" "$out"
+  && ok "VM existente: lo dice, sale con 0 y no la recrea ni crea secretos" || fail "idempotencia con VM existente" "$out"
+logged "disks update orca-cliente-a" && ! logged "add-resource-policies" \
+  && ok "VM existente sin políticas: solo reasegura la etiqueta del disco" || fail "reconciliación sin políticas" "$out"
+
+reset_log
+out="$("${FAKE[@]}" FAKE_GCLOUD_EXISTS=vm,sched,snappol "${SCRIPTS}/create-client.sh" cliente-a 2>&1)"; rc=$?
+[[ $rc -eq 0 ]] && ! logged "instances create" && logged "instances add-resource-policies orca-cliente-a" && logged "disks add-resource-policies orca-cliente-a" \
+  && ok "VM existente + políticas nuevas: se adjuntan al reejecutar (completa ejecuciones a medias)" || fail "reconciliación con políticas" "$out"
+
+reset_log
+out="$("${FAKE[@]}" GCLOUD=/no/existe/gcloud "${SCRIPTS}/create-client.sh" cliente-a 2>&1)"; rc=$?
+[[ $rc -ne 0 ]] && contains "$out" "No encuentro" && ok "gcloud ausente: aborta (no lo confunde con 'recurso inexistente')" || fail "gcloud ausente" "$out"
+out="$(echo cliente-a | "${FAKE[@]}" GCLOUD=/no/existe/gcloud "${SCRIPTS}/destroy-client.sh" cliente-a 2>&1)"; rc=$?
+[[ $rc -ne 0 ]] && ! contains "$out" "Nada que hacer" && ok "destroy con gcloud ausente: aborta, no dice 'Nada que hacer'" || fail "destroy con gcloud ausente" "$out"
+reset_log
+out="$("${FAKE[@]}" FAKE_GCLOUD_FAIL="projects describe" "${SCRIPTS}/create-client.sh" cliente-a 2>&1)"; rc=$?
+[[ $rc -ne 0 ]] && contains "$out" "No puedo acceder al proyecto" && ! logged "instances create" && ok "proyecto inaccesible: aborta antes de crear nada" || fail "preflight de proyecto" "$out"
 
 reset_log
 out="$("${FAKE[@]}" FAKE_GCLOUD_EXISTS=sa "${SCRIPTS}/create-client.sh" cliente-a 2>&1)"; rc=$?
@@ -169,6 +189,10 @@ out="$(echo "cliente-a" | "${FAKE[@]}" FAKE_GCLOUD_EXISTS=$ALL "${SCRIPTS}/destr
 reset_log
 out="$(echo "cliente-a" | "${FAKE[@]}" FAKE_GCLOUD_EXISTS=$ALL "${SCRIPTS}/destroy-client.sh" cliente-a --keep-secret 2>&1)"; rc=$?
 [[ $rc -eq 0 ]] && ! logged "secrets delete" && logged "secrets remove-iam-policy-binding" && ok "--keep-secret conserva el secreto y revoca el acceso de la SA" || fail "--keep-secret" "$out"
+
+reset_log
+out="$(echo "cliente-a" | "${FAKE[@]}" FAKE_GCLOUD_EXISTS=$ALL FAKE_GCLOUD_FAIL="remove-iam-policy-binding" "${SCRIPTS}/destroy-client.sh" cliente-a --keep-secret 2>&1)"; rc=$?
+[[ $rc -eq 0 ]] && logged "service-accounts delete" && contains "$out" "se continúa" && ok "--keep-secret: si falla quitar el binding, igual borra la cuenta de servicio" || fail "--keep-secret con binding inexistente" "$out"
 
 reset_log
 out="$(echo "cliente-a" | "${FAKE[@]}" FAKE_GCLOUD_EXISTS=$ALL,snapshots "${SCRIPTS}/destroy-client.sh" cliente-a --delete-snapshots 2>&1)"; rc=$?

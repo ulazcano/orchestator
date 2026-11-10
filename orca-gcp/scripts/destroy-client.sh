@@ -37,6 +37,7 @@ main() {
   if [[ $SHOW_HELP -eq 1 ]]; then usage; return 0; fi
   [[ ${#ARGS[@]} -eq 1 ]] || { usage >&2; die "Indica exactamente un slug."; }
   client_vars "${ARGS[0]}"
+  preflight
 
   local keep_secret=0 del_snaps=0
   has_flag --keep-secret && keep_secret=1
@@ -130,7 +131,8 @@ main() {
   fi
   if [[ $has_secret -eq 1 ]]; then
     if [[ $keep_secret -eq 1 ]]; then
-      gc secrets remove-iam-policy-binding "$SECRET_TS_AUTHKEY" --project="$PROJECT_ID" \
+      # Puede no existir el binding (nunca concedido / ya quitado): no debe impedir borrar la cuenta.
+      gc_try secrets remove-iam-policy-binding "$SECRET_TS_AUTHKEY" --project="$PROJECT_ID" \
         --member="serviceAccount:${SERVICE_ACCOUNT}" --role=roles/secretmanager.secretAccessor
     else
       gc secrets delete "$SECRET_TS_AUTHKEY" --project="$PROJECT_ID" --quiet

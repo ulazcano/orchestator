@@ -49,7 +49,7 @@ main() {
   local disk_gb="${ARGS[2]:-$DISK_GB}"
 
   [[ "$machine_type" =~ ^[a-z0-9][a-z0-9-]*$ ]] || die "machine-type inválido: '$machine_type'."
-  [[ "$disk_gb" =~ ^[0-9]+$ && "$disk_gb" -ge 50 && "$disk_gb" -le 4000 ]] \
+  [[ "$disk_gb" =~ ^[1-9][0-9]*$ && "$disk_gb" -ge 50 && "$disk_gb" -le 4000 ]] \
     || die "disk-gb inválido: '$disk_gb' (entero entre 50 y 4000)."
   require_orca_version
   [[ -f "$STARTUP_SCRIPT" ]] || die "No existe $STARTUP_SCRIPT."
@@ -58,10 +58,16 @@ main() {
   info "Orca fijada en la versión $ORCA_VERSION (sin auto-update)"
   [[ $DRY_RUN -eq 1 ]] && info "MODO DRY-RUN: no se ejecuta ni se consulta nada en GCP"
 
-  # --- Idempotencia: si la VM existe, no hacemos nada --------------------------
+  preflight
+
+  # --- Idempotencia: si la VM existe no se recrea; solo se completa lo que falte -----
+  # (etiqueta del disco y políticas), para poder terminar una ejecución a medias.
   if resource_exists "VM $VM_NAME" \
        "$GCLOUD" compute instances describe "$VM_NAME" --zone="$ZONE" --project="$PROJECT_ID" --format="value(name)"; then
-    info "La VM $VM_NAME ya existe en $ZONE. No se hace nada."
+    info "La VM $VM_NAME ya existe en $ZONE: no se recrea. Se verifican etiqueta del disco y políticas."
+    label_disk
+    attach_policy "$SCHEDULE_NAME" instances
+    attach_policy "$SNAPSHOT_POLICY" disks
     return 0
   fi
 
@@ -87,7 +93,7 @@ main() {
   #   (y logging.logWriter si hace falta). Debe correr DESPUÉS de crear el secreto (paso 1).
   local bootstrap_args=("$BOOTSTRAP_SCRIPT" client-sa "$CLIENT")
   [[ $DRY_RUN -eq 1 ]] && bootstrap_args+=(--dry-run)
-  if [[ -x "$BOOTSTRAP_SCRIPT" || -f "$BOOTSTRAP_SCRIPT" ]]; then
+  if [[ -f "$BOOTSTRAP_SCRIPT" ]]; then
     run bash "${bootstrap_args[@]}"
   elif [[ $DRY_RUN -eq 1 ]]; then
     warn "TODO: $BOOTSTRAP_SCRIPT aún no existe (workspace 0). Llamada prevista:"
@@ -124,11 +130,7 @@ main() {
     --metadata="client=${CLIENT},orca-version=${ORCA_VERSION}" \
     --metadata-from-file="startup-script=${STARTUP_SCRIPT}"
 
-  # El disco de arranque se llama igual que la VM; --labels de "instances create" no lo etiqueta.
-  gc compute disks update "$VM_NAME" \
-    --project="$PROJECT_ID" \
-    --zone="$ZONE" \
-    --update-labels="$LABEL"
+  label_disk
 
   # --- 4. Políticas de horario y snapshots (las crea el workspace 2) ---------
   attach_policy "$SCHEDULE_NAME" instances
@@ -137,14 +139,26 @@ main() {
   print_next_steps "$need_secret_value"
 }
 
-# attach_policy NOMBRE instances|disks: adjunta la política de recursos si existe.
+# El disco de arranque se llama igual que la VM; --labels de "instances create" no lo etiqueta.
+label_disk() {
+  gc compute disks update "$VM_NAME" \
+    --project="$PROJECT_ID" \
+    --zone="$ZONE" \
+    --update-labels="$LABEL"
+}
+
+# attach_policy NOMBRE instances|disks: adjunta la política de recursos si existe y aún no está adjunta.
 attach_policy() {
   local policy="$1" kind="$2"
   if [[ $DRY_RUN -eq 1 ]]; then
     info "(dry-run) se adjuntaría ${policy} solo si existe (la crea el workspace 2 con schedule-client.sh):"
   elif ! resource_exists "política $policy" \
          "$GCLOUD" compute resource-policies describe "$policy" --region="$REGION" --project="$PROJECT_ID" --format="value(name)"; then
-    info "La política $policy aún no existe; no se adjunta. Créala con schedule-client.sh y adjúntala después."
+    info "La política $policy aún no existe; no se adjunta. Créala con schedule-client.sh y vuelve a ejecutar create-client.sh (adjunta lo que falte)."
+    return 0
+  elif "$GCLOUD" compute "$kind" describe "$VM_NAME" --zone="$ZONE" --project="$PROJECT_ID" \
+         --format="value(resourcePolicies)" 2>/dev/null | grep -qF "/${policy}"; then
+    info "La política $policy ya está adjunta."
     return 0
   fi
   gc compute "$kind" add-resource-policies "$VM_NAME" \

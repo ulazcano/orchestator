@@ -50,9 +50,16 @@
   ok   destroy-client --help
   ok   flag desconocido rechazado
   ok   disco < 50 GB rechazado
+  ok   disk-gb con cero inicial rechazado
+  ok   ORCA_VERSION con sufijo rc rechazada (vm-startup.sh solo acepta X.Y.Z)
   ok   machine-type y disk-gb posicionales
 == create-client con stub de gcloud (modo real, sin GCP) ==
-  ok   VM existente: lo dice, sale con 0 y no crea nada
+  ok   VM existente: lo dice, sale con 0 y no la recrea ni crea secretos
+  ok   VM existente sin políticas: solo reasegura la etiqueta del disco
+  ok   VM existente + políticas nuevas: se adjuntan al reejecutar (completa ejecuciones a medias)
+  ok   gcloud ausente: aborta (no lo confunde con 'recurso inexistente')
+  ok   destroy con gcloud ausente: aborta, no dice 'Nada que hacer'
+  ok   proyecto inaccesible: aborta antes de crear nada
   ok   VM nueva: crea secreto, VM y etiqueta disco; sin políticas si no existen
   ok   nunca ejecuta 'secrets versions add'
   ok   secreto existente no se recrea; políticas existentes se adjuntan
@@ -65,6 +72,7 @@
   ok   confirmación correcta: borra VM, secreto, SA y políticas
   ok   snapshots se conservan por defecto
   ok   --keep-secret conserva el secreto y revoca el acceso de la SA
+  ok   --keep-secret: si falla quitar el binding, igual borra la cuenta de servicio
   ok   --delete-snapshots borra los snapshots
   ok   sin recursos: no hace nada
   ok   solo lista y borra lo que existe
@@ -148,6 +156,7 @@
   ok   client inválido '' rechazado
 == 6. Checksum: descarga corrupta ==
   ok   sha512 incorrecto: aborta sin instalar
+  ok   sin latest-linux.yml: falla cerrada (no instala sin verificar)
   ok   published_sha512 extrae el hash del archivo correcto
 == 7. Auth key: nunca a disco, log ni argv (gcloud/tailscale falsos) ==
   ok   tailscale-up: lee el secreto y ejecuta 'tailscale up'
@@ -158,11 +167,15 @@
   ok   la key NO está en ningún archivo (barrido de /tmp /var /root /home /etc)
   ok   con Tailscale ya conectado: SKIP, no vuelve a ejecutar 'tailscale up'
   ok   sin valor en el secreto: FAIL con instrucciones (no se cuelga)
+== 7b. Cambio de versión con el paquete en hold ==
+  ok   ORCA_VERSION=1.4.254 sobre una instalación en hold: termina con 0
+  ok   orca-ide quedó en 1.4.254
+  ok   el paquete vuelve a quedar en hold
 == 8. Experimento: ¿acepta el tailscale real '--auth-key=file:/dev/fd/3'? (key falsa) ==
   rc=1 salida: backend error: invalid key: API key does not exist
   ok   el mensaje de tailscale no indica fallo al leer el archivo (el rechazo, si hay, viene del servidor)
 
-Resultado contenedor: 61 ok, 0 fallos
+Resultado contenedor: 65 ok, 0 fallos
   ok   prueba de contenedor
 
-Resultado: 66 ok, 0 fallos
+Resultado: 74 ok, 0 fallos

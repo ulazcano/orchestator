@@ -91,8 +91,9 @@ client_vars() {
 require_orca_version() {
   ORCA_VERSION="${ORCA_VERSION:-}"
   [[ -n "$ORCA_VERSION" ]] || die "Define ORCA_VERSION con la versión exacta de tu Orca en el Mac (ej: export ORCA_VERSION=1.4.255)."
-  [[ "$ORCA_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.]+)?$ ]] \
-    || die "ORCA_VERSION='$ORCA_VERSION' no parece una versión (esperado X.Y.Z, sin 'v')."
+  # Estricto X.Y.Z: es lo único que acepta vm-startup.sh (nombre del .deb y tag vX.Y.Z).
+  [[ "$ORCA_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] \
+    || die "ORCA_VERSION='$ORCA_VERSION' no es válida (esperado X.Y.Z, sin 'v' ni sufijos)."
 }
 
 # ---------------------------------------------------------------------------
@@ -171,6 +172,22 @@ run() {
 # gc ARGS...: atajo para run "$GCLOUD" ...
 gc() { run "$GCLOUD" "$@"; }
 
+# preflight: antes de actuar de verdad, comprueba que gcloud existe y que el proyecto es accesible.
+# Evita confundir "gcloud ausente / proyecto equivocado" con "el recurso no existe". Sin efecto en --dry-run.
+preflight() {
+  [[ $DRY_RUN -eq 1 ]] && return 0
+  command -v "$GCLOUD" >/dev/null 2>&1 || die "No encuentro '$GCLOUD' en el PATH."
+  local out
+  out="$("$GCLOUD" projects describe "$PROJECT_ID" --format="value(projectId)" 2>&1)" \
+    || die "No puedo acceder al proyecto $PROJECT_ID (¿gcloud auth? ¿proyecto correcto?). Error real:"$'\n'"$out"
+}
+
+# gc_try ARGS...: como gc, pero un fallo solo avisa (para pasos opcionales/ya hechos).
+gc_try() {
+  run "$GCLOUD" "$@" || warn "El comando anterior falló (se continúa)."
+  return 0
+}
+
 # resource_exists DESCRIPCIÓN CMD...: 0 si existe, 1 si no existe (NOT_FOUND).
 # Cualquier otro error (auth, permisos, red) aborta mostrando el error real.
 # En --dry-run no consulta GCP: asume que no existe.
@@ -184,7 +201,8 @@ resource_exists() {
   if out="$("$@" 2>&1)"; then
     return 0
   fi
-  if grep -qiE 'not found|NOT_FOUND|does not exist|was not found' <<<"$out"; then
+  # "command not found" (gcloud ausente) NO es un recurso inexistente.
+  if grep -v 'command not found' <<<"$out" | grep -qiE 'not found|NOT_FOUND|does not exist'; then
     return 1
   fi
   die "No pude consultar '$what'. Error real de gcloud:"$'\n'"$out"

@@ -205,10 +205,14 @@ step_orca_install() {
   curl -fsSL -o "${tmp}/${deb}" "${url}/${deb}"
 
   # La doc de instalación no menciona checksums; GitHub Releases publica latest-linux.yml (sha512).
-  expected=""
-  if curl -fsSL -o "${tmp}/latest-linux.yml" "${url}/latest-linux.yml" 2>/dev/null; then
-    expected="$(published_sha512 "${tmp}/latest-linux.yml" "$deb")"
+  # Si no se puede descargar el yml NO se instala (se reintenta en el próximo arranque): no se degrada
+  # a "sin verificar" por un fallo de red. Solo se omite la verificación si la release publica el yml
+  # pero sin entrada para este .deb ("si lo publican").
+  if ! curl -fsSL -o "${tmp}/latest-linux.yml" "${url}/latest-linux.yml"; then
+    echo "ERROR: no pude descargar latest-linux.yml de la release v${ORCA_VERSION}; no se instala sin verificar." >&2
+    return 1
   fi
+  expected="$(published_sha512 "${tmp}/latest-linux.yml" "$deb")"
   if [[ -n "$expected" ]]; then
     actual="$(sha512_b64 "${tmp}/${deb}")"
     if [[ "$actual" != "$expected" ]]; then
@@ -220,10 +224,12 @@ step_orca_install() {
     echo "AVISO: la release v${ORCA_VERSION} no publica sha512 para ${deb}; se instala sin verificar checksum." >&2
   fi
 
-  apt_get install -y "${tmp}/${deb}"
+  pkg="$(dpkg-deb -f "${tmp}/${deb}" Package)"
+  # Un hold previo (de otra versión) impediría cambiar de versión: se levanta, se instala y se vuelve a fijar.
+  apt-mark unhold "$pkg" >/dev/null 2>&1 || true
+  apt_get install -y --allow-downgrades "${tmp}/${deb}"
   command -v orca-ide >/dev/null
   # Sin auto-update: el paquete queda retenido en esta versión.
-  pkg="$(dpkg-deb -f "${tmp}/${deb}" Package)"
   apt-mark hold "$pkg"
   echo "orca instalado: paquete ${pkg} ${ORCA_VERSION}"
 }
