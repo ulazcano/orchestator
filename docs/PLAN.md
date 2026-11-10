@@ -66,3 +66,5 @@ Actualiza esta sección en tu PR con una línea por hito (fecha, workspace, qué
 
 - 2026-11-09 · setup · Repo inicializado con spec y plan.
 - 2026-11-09 · ws3 · Parte A lista en PR: `verify-client.sh` (solo lectura, `--dry-run`, shellcheck limpio, lógica probada con `gcloud` simulado), `docs/verificacion.md` (checklist Fase 5 con resultados vacíos) y `docs/comandos-mac-auth.md` (marco de clasificación + bloque de recolección; **bloqueado** a la espera de que el dueño pegue las salidas del Mac: sin `RunLocalCommand`). Parte B (ejecución real) pendiente de que exista `orca-cliente-a`.
+- 2026-11-09 · ws0 · Fase 0 completa: diagnóstico en `orca-gcp/docs/diagnostico.md` (facturación vinculada; Compute/IAP/Secret Manager aún sin habilitar; Orca estable v1.4.255, Mac en 1.4.251).
+- 2026-11-09 · ws0 · Fase 1: `orca-gcp/scripts/bootstrap-project.sh` (apis, network, firewall, client-sa, purge-default-network, --dry-run, shellcheck limpio). Aplicado en GCP (APIs, orca-vpc, orca-subnet, regla IAP; red default eliminada).
