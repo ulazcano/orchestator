@@ -1,0 +1,55 @@
+== Verificación de orca-cliente-a (proyecto bove-orca, zona us-central1-a) ==
+[PASS] FW-01   Única regla de ingreso en orca-vpc: orca-allow-iap-ssh
+[PASS] FW-02   orca-allow-iap-ssh: origen <ip>/20, tcp:22, tag orca
+[PASS] FW-03   Ninguna regla de ingreso desde <ip>/0 en el proyecto
+[PASS] VM-01   La VM orca-cliente-a está RUNNING
+[PASS] VM-02   Tag orca y etiqueta cliente=cliente-a en VM y disco
+[PASS] VM-03   VM en orca-vpc/orca-subnet; IP externa efímera
+[PASS] POL-01  Adjuntas: orca-horario-cliente-a (VM) y orca-snapshots-cliente-a (disco)
+[PASS] POL-02  Horario 0 8 * * 1-5 on / 0 21 * * 1-5 off (America/Santiago)
+[PASS] POL-03  Snapshots programados con retención 7 días
+[PASS] META-01 Metadata solo con client, orca-version, startup-script, block-project-ssh-keys (y ssh-keys de la instancia)
+[PASS] META-02 Metadata y startup-script sin patrones de secretos
+[PASS] META-03 orca-version en metadata = ORCA_VERSION (1.4.251)
+[PASS] IAM-01  La VM usa la cuenta de servicio dedicada
+[PASS] IAM-02  Solo la SA del cliente es secretAccessor de tailscale-authkey-cliente-a
+[PASS] IAM-03  La SA no tiene roles de proyecto sobre Secret Manager/propietario/editor (roles: roles/logging.logWriter)
+[PASS] SCAN-01 Sin puertos abiertos desde fuera de la VPC
+        nmap no instalado: solo se probó con nc
+[SKIP] TS-01   CLI de tailscale no encontrada en este equipo
+[PASS] TSI-01  Tailscale Running, hostname orca-cliente-a, tag tag:orca-cliente-a
+[PASS] SVC-01  orca-ide serve service status = running
+        orca-serve.service (systemd): live, pid 8206 — active (running) Unit: /home/orca/.config/systemd/user/orca-serve.service 
+[PASS] SVC-02  Linger activo y unidad systemd de usuario habilitada (sobrevive a reinicio)
+        orca-serve.service enabled;
+[INFO] SVC-03  Arranque de la VM (compara antes/después de 'sudo reboot')
+        2026-11-10 11:13:25
+[INFO] SVC-04  Socket del servidor en el puerto 6768
+        <ip>:6768  (informativo; el firewall ya bloquea el acceso público)
+[PASS] SUDO-01 sudo -n true como orca falla (esperado)
+[PASS] SUDO-02 orca sin grupos sudo/admin/docker/lxd
+[INFO] SUDO-03 sudo -l -U orca
+        User orca may run the following commands on orca-cliente-a:     (ALL : ALL) !ALL 
+[PASS] CRED-01 Sin llaves SSH privadas en ~orca/.ssh
+[PASS] CRED-02 Sin .aws/.azure/.kube/.docker/gcloud/op/.netrc/.npmrc/.pypirc
+[INFO] CRED-03 $HOME/.config/gh de orca: presente; .claude: presente (deben ser cuentas del CLIENTE: revisar a mano con 'gh auth status' y 'orca-ide account list')
+[WARN] CRED-04 Variables de entorno con nombre sensible en procesos de orca (solo nombres)
+        SSH_AUTH_SOCK 
+[PASS] LOG-01  /var/log/orca-startup.log sin patrones de secretos (permisos 644)
+[INFO] LOG-02  Líneas de pasos completados en el log de arranque: 11
+        2026-11-10T14:17:53Z START tailscale-up 2026-11-10T14:17:55Z OK tailscale-up 2026-11-10T14:17:55Z OK startup 
+[PASS] AGT-01  Claude Code instalado para orca
+        2.1.322 (Claude Code)
+[INFO] AGT-02  Procesos de claude en ejecución como orca: 0
+[INFO] ORC-01  Paquete de Orca instalado (compara con ORCA_VERSION y con el Mac)
+        orca-ide 1.4.251;
+
+Ítems MANUALES (ver orca-gcp/docs/verificacion.md):
+  MAN-01  ACL de Tailscale desde un dispositivo no autorizado (debe fallar)
+  MAN-02  Mac: Settings → Remote Orca Servers = Connected y creación de un worktree
+  MAN-03  Agente de Claude Code sigue vivo con la laptop cerrada
+  MAN-04  'sudo reboot' y servicio running de nuevo (ejecuta este script antes y después)
+  MAN-05  Cuentas gh/claude/codex de la VM son del cliente (no del Mac)
+  MAN-06  Prueba crítica: orca-gcp/docs/comandos-mac-auth.md
+
+== Resumen: PASS=25 FAIL=0 WARN=1 SKIP=1 ==
