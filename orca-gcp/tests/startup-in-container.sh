@@ -29,7 +29,7 @@ has_line " OK startup$" && ok "log: startup completo" || fail "log: sin OK start
 
 echo "== 2. Usuarios y sudo =="
 id orca >/dev/null 2>&1 && ok "usuario orca existe" || fail "usuario orca no existe"
-id admin >/dev/null 2>&1 && ok "usuario admin existe" || fail "usuario admin no existe"
+id orca-admin >/dev/null 2>&1 && ok "usuario orca-admin existe" || fail "usuario orca-admin no existe"
 [[ -d /home/orca/projects && "$(stat -c %U /home/orca/projects)" == orca ]] && ok "~orca/projects creado y de orca" || fail "~orca/projects"
 if id -nG orca | tr ' ' '\n' | grep -qxE 'sudo|adm|admin|wheel|google-sudoers|docker|lxd'; then fail "orca pertenece a un grupo privilegiado: $(id -nG orca)"; else ok "orca sin grupos privilegiados ($(id -nG orca))"; fi
 runuser -u orca -- sudo -n true >/tmp/sudo-orca.out 2>&1 && fail "orca PUDO ejecutar sudo" "$(cat /tmp/sudo-orca.out)" || ok "orca no puede hacer sudo (sudo -n true falla)"
@@ -41,9 +41,9 @@ printf '%%google-sudoers ALL=(ALL:ALL) NOPASSWD:ALL\n' >/etc/sudoers.d/google-su
 usermod -aG google-sudoers orca
 runuser -u orca -- sudo -n true >/dev/null 2>&1 && fail "orca hizo sudo vía google-sudoers (el override zz-orca-nosudo no funciona)" || ok "aun en google-sudoers, orca no puede sudo (override zz-orca-nosudo)"
 gpasswd -d orca google-sudoers >/dev/null; rm -f /etc/sudoers.d/google-sudoers; groupdel google-sudoers 2>/dev/null
-sudo -l -U admin 2>&1 | grep -q 'NOPASSWD: ALL' && ok "admin tiene sudo" || fail "admin sin sudo" "$(sudo -l -U admin 2>&1)"
+sudo -l -U orca-admin 2>&1 | grep -q 'NOPASSWD: ALL' && ok "orca-admin tiene sudo" || fail "orca-admin sin sudo" "$(sudo -l -U orca-admin 2>&1)"
 [[ "$(passwd -S orca | awk '{print $2}')" == L ]] && ok "orca con contraseña bloqueada" || fail "orca sin contraseña bloqueada"
-[[ "$(passwd -S admin | awk '{print $2}')" == L ]] && ok "admin con contraseña bloqueada" || fail "admin sin contraseña bloqueada"
+[[ "$(passwd -S orca-admin | awk '{print $2}')" == L ]] && ok "orca-admin con contraseña bloqueada" || fail "orca-admin sin contraseña bloqueada"
 visudo -c >/dev/null 2>&1 && ok "sudoers válido (visudo -c)" || fail "sudoers inválido"
 
 echo "== 3. Herramientas instaladas =="

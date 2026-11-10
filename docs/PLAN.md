@@ -39,7 +39,7 @@ IMAGE_FAMILY="ubuntu-2404-lts-amd64"; IMAGE_PROJECT="ubuntu-os-cloud"
 ORCA_VERSION="${ORCA_VERSION:?}" # fijada por variable, misma que el Mac; sin auto-update
 ORCA_PORT="6768"
 ORCA_USER="orca"                # sin sudo
-ADMIN_USER="admin"              # con sudo, solo IAP
+ADMIN_USER="orca-admin"              # con sudo, solo IAP
 SCHEDULE_NAME="orca-horario-${CLIENT}"   # 08:00 on / 21:00 off, lun-vie, America/Santiago
 SNAPSHOT_POLICY="orca-snapshots-${CLIENT}" # diario, retención 7 días
 STARTUP_LOG="/var/log/orca-startup.log"  # sin secretos
@@ -49,7 +49,7 @@ Convenciones de scripts: `#!/usr/bin/env bash`, `set -euo pipefail`, variables a
 idempotentes, `--dry-run` que imprime los comandos `gcloud` sin ejecutarlos, `--help`,
 cero secretos incrustados o impresos. `shellcheck` limpio.
 
-Metadata de la VM: solo `client`, `orca-version`, `startup-script`. **Nunca** la authkey.
+Metadata de la VM: solo `client`, `orca-version`, `block-project-ssh-keys=TRUE`, `startup-script`. **Nunca** la authkey.
 La VM lee el secreto con `gcloud secrets versions access latest --secret="$SECRET_TS_AUTHKEY"`
 usando su cuenta de servicio (rol `roles/secretmanager.secretAccessor` solo sobre ese secreto).
 

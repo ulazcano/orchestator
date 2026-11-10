@@ -22,7 +22,7 @@ set -euo pipefail
 PROJECT_ID="bove-orca"
 ORCA_PORT="6768"
 ORCA_USER="orca"
-ADMIN_USER="admin"
+ADMIN_USER="orca-admin"
 STARTUP_LOG="${STARTUP_LOG:-/var/log/orca-startup.log}"
 METADATA_URL="http://metadata.google.internal/computeMetadata/v1"
 ORCA_REPO="stablyai/orca"
@@ -129,8 +129,9 @@ step_users() {
   printf '%s ALL=(ALL:ALL) !ALL\n' "$ORCA_USER" >/etc/sudoers.d/zz-orca-nosudo
   visudo -cf /etc/sudoers.d/zz-orca-nosudo >/dev/null
 
-  # admin: con sudo; sin contraseña (bloqueada) y sin llave: solo entra por IAP con la llave
-  # que gcloud añade a la metadata (`gcloud compute ssh admin@VM --tunnel-through-iap`).
+  # orca-admin: con sudo; sin contraseña (bloqueada) y sin llave: solo entra por IAP con la llave.
+  # (No se llama "admin": Ubuntu ya trae un grupo "admin" y useradd falla; el agente de GCE también.)
+  # que gcloud añade a la metadata (`gcloud compute ssh orca-admin@VM --tunnel-through-iap`).
   if ! id "$ADMIN_USER" >/dev/null 2>&1; then
     useradd --create-home --shell /bin/bash --groups sudo "$ADMIN_USER"
   fi

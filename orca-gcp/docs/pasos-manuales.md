@@ -93,7 +93,11 @@ gcloud compute ssh "orca-<slug>" --zone us-central1-a --tunnel-through-iap --pro
 ```
 
 No hay IP pública entrante ni puerto 22 abierto a internet: solo el rango IAP `35.235.240.0/20`.
-*TODO (workspace 1):* si `create-client.sh` fija un usuario/clave distinto (`admin` con OS Login o metadatos), indicar aquí el comando exacto (p. ej. `admin@orca-<slug>`).
+El usuario con sudo es `orca-admin` (sin OS Login; `gcloud compute ssh` añade tu llave a la metadata de la instancia, con `block-project-ssh-keys=TRUE`):
+
+```bash
+gcloud compute ssh "orca-admin@orca-<slug>" --zone us-central1-a --tunnel-through-iap --project=bove-orca
+```
 
 Cambia al usuario sin sudo, que es quien corre el servidor de Orca y los agentes:
 

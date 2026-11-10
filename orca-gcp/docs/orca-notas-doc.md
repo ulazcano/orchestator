@@ -60,7 +60,7 @@ Los remote servers están en **beta**: todo esto puede cambiar. Cuando la doc y 
    desde el repo apt de Google Cloud si falta (paso `tailscale-up`).
 9. **Scopes de la VM**: se usa `cloud-platform` porque Secret Manager lo exige; el límite real lo pone IAM
    (la cuenta de servicio solo debe tener `secretAccessor` sobre su secreto — responsabilidad de `bootstrap-project.sh`).
-10. **SSH como `admin`**: sin OS Login, `gcloud compute ssh admin@orca-<slug> --tunnel-through-iap` agrega una llave a la
+10. **SSH como `orca-admin`**: sin OS Login, `gcloud compute ssh orca-admin@orca-<slug> --tunnel-through-iap` agrega una llave a la
     metadata (el contrato de metadata permite solo `client`, `orca-version`, `startup-script`; las llaves SSH las agrega gcloud).
     Si el proyecto fuerza OS Login, `admin` no se usa y el acceso es con la identidad Google (rol `roles/compute.osAdminLogin`).
     Nunca entrar como `orca` por gcloud: el agente de invitado de GCE lo agregaría a `google-sudoers` (el script lo neutraliza con

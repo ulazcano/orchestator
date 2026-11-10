@@ -105,7 +105,7 @@ Nota: no se imprime la IP en este documento; tapar en la salida pegada.
 ### 2.1 Estado en la VM, con tag
 
 ```bash
-gcloud compute ssh admin@orca-cliente-a --zone us-central1-a --project bove-orca --tunnel-through-iap \
+gcloud compute ssh orca-admin@orca-cliente-a --zone us-central1-a --project bove-orca --tunnel-through-iap \
   --command 'sudo tailscale status --json | jq "{estado: .BackendState, host: .Self.HostName, tags: .Self.Tags}"'
 ```
 
@@ -171,7 +171,7 @@ sin necesitar un segundo dispositivo:
 ### 3.1 y 3.2 Estado, habilitación y linger
 
 ```bash
-gcloud compute ssh admin@orca-cliente-a --zone us-central1-a --project bove-orca --tunnel-through-iap --command '
+gcloud compute ssh orca-admin@orca-cliente-a --zone us-central1-a --project bove-orca --tunnel-through-iap --command '
   U=$(id -u orca)
   sudo -u orca -H env XDG_RUNTIME_DIR=/run/user/$U orca-ide serve service status
   sudo -u orca -H env XDG_RUNTIME_DIR=/run/user/$U systemctl --user list-unit-files --type=service | grep -i orca
@@ -194,7 +194,7 @@ si no hay *lingering*. La doc **no documenta** `service start/stop`; solo `insta
 ```bash
 # 1) Antes: anotar la hora de arranque y el estado (comando de 3.1)
 # 2) Reiniciar (admin con sudo):
-gcloud compute ssh admin@orca-cliente-a --zone us-central1-a --project bove-orca --tunnel-through-iap --command 'sudo reboot'
+gcloud compute ssh orca-admin@orca-cliente-a --zone us-central1-a --project bove-orca --tunnel-through-iap --command 'sudo reboot'
 # 3) Esperar ~2 min y repetir el comando de 3.1, o:
 ./orca-gcp/scripts/verify-client.sh cliente-a        # SVC-01, SVC-02 y SVC-03 (hora de arranque nueva)
 tailscale status | grep orca-cliente-a                # la VM vuelve a la tailnet sola
@@ -221,7 +221,7 @@ Paso a paso (según https://www.onorca.dev/docs/remote-servers): en Orca del Mac
 
 ```bash
 # Evidencia complementaria desde la VM (el servicio no imprime el link de pareo):
-gcloud compute ssh admin@orca-cliente-a --zone us-central1-a --project bove-orca --tunnel-through-iap \
+gcloud compute ssh orca-admin@orca-cliente-a --zone us-central1-a --project bove-orca --tunnel-through-iap \
   --command 'sudo ss -tnp state established "( sport = :6768 )" | wc -l'
 ```
 
@@ -240,7 +240,7 @@ En Orca, abrir un proyecto del servidor remoto (repo de prueba del cliente en `~
 workspace/worktree nuevo desde la UI. La doc no describe el flujo de worktrees; se verifica el efecto en la VM:
 
 ```bash
-gcloud compute ssh admin@orca-cliente-a --zone us-central1-a --project bove-orca --tunnel-through-iap \
+gcloud compute ssh orca-admin@orca-cliente-a --zone us-central1-a --project bove-orca --tunnel-through-iap \
   --command 'sudo -u orca -H git -C /home/orca/projects/<repo-de-prueba> worktree list'
 ```
 
@@ -260,7 +260,7 @@ gcloud compute ssh admin@orca-cliente-a --zone us-central1-a --project bove-orca
 ### 5.1 Instalado y con cuenta del cliente
 
 ```bash
-gcloud compute ssh admin@orca-cliente-a --zone us-central1-a --project bove-orca --tunnel-through-iap \
+gcloud compute ssh orca-admin@orca-cliente-a --zone us-central1-a --project bove-orca --tunnel-through-iap \
   --command 'sudo -u orca -H bash -lc "claude --version; orca-ide account list"'
 ```
 
@@ -280,7 +280,7 @@ no pegar correos).
    30 minutos”. Hacerlo dentro del horario 08:00-21:00 (si no, el apagado programado mata la prueba).
 2. Anotar la hora y el PID:
    ```bash
-   gcloud compute ssh admin@orca-cliente-a --zone us-central1-a --project bove-orca --tunnel-through-iap \
+   gcloud compute ssh orca-admin@orca-cliente-a --zone us-central1-a --project bove-orca --tunnel-through-iap \
      --command 'pgrep -u orca -af claude; date -u'
    ```
 3. **Cerrar la laptop** (suspender) ≥ 10 min. Con la laptop cerrada, desde otro dispositivo o desde el mismo Mac
@@ -303,7 +303,7 @@ viven en el servidor; hay que confirmarlo con esta prueba.)
 ## 6. `orca` no puede usar sudo
 
 ```bash
-gcloud compute ssh admin@orca-cliente-a --zone us-central1-a --project bove-orca --tunnel-through-iap --command '
+gcloud compute ssh orca-admin@orca-cliente-a --zone us-central1-a --project bove-orca --tunnel-through-iap --command '
   sudo -n -u orca -H sudo -n true; echo "exit=$?"
   id -nG orca
   sudo -n -l -U orca'
@@ -326,7 +326,7 @@ sesión de agente en Orca: `sudo -n true` debe fallar.
 Se revisan **nombres**, nunca valores.
 
 ```bash
-gcloud compute ssh admin@orca-cliente-a --zone us-central1-a --project bove-orca --tunnel-through-iap --command '
+gcloud compute ssh orca-admin@orca-cliente-a --zone us-central1-a --project bove-orca --tunnel-through-iap --command '
   H=/home/orca
   echo "--- gh:";      sudo -u orca -H gh auth status 2>&1 | sed -E "s/(Token: ).*/\1<oculto>/"
   echo "--- ~/.claude:"; sudo ls -la $H/.claude 2>&1 | head -20
@@ -374,7 +374,7 @@ gcloud projects get-iam-policy bove-orca --flatten="bindings[].members" \
   --filter="bindings.members=serviceAccount:orca-vm-cliente-a@bove-orca.iam.gserviceaccount.com" \
   --format="value(bindings.role)"
 # Log de arranque sin secretos
-gcloud compute ssh admin@orca-cliente-a --zone us-central1-a --project bove-orca --tunnel-through-iap \
+gcloud compute ssh orca-admin@orca-cliente-a --zone us-central1-a --project bove-orca --tunnel-through-iap \
   --command 'sudo grep -Eic "tskey-|ghp_|github_pat_|sk-ant-|pairing" /var/log/orca-startup.log; sudo tail -n 10 /var/log/orca-startup.log'
 
 # 8.2 Horario y snapshots

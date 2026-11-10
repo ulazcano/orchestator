@@ -27,7 +27,7 @@
     --shielded-vtpm \
     --shielded-integrity-monitoring \
     --labels=cliente=cliente-a \
-    --metadata=client=cliente-a,orca-version=1.4.255 \
+    --metadata=client=cliente-a,orca-version=1.4.255,block-project-ssh-keys=TRUE \
     --metadata-from-file=startup-script=<REPO>/orca-gcp/scripts/vm-startup.sh
 [dry-run] gcloud compute disks update orca-cliente-a \
     --project=bove-orca \
@@ -57,7 +57,7 @@ Siguiente paso (lo haces tú; el valor nunca pasa por el agente)
 La VM espera la key hasta ~10 min tras el arranque. Si ya pasó ese tiempo, vuelve a
 ejecutar el startup script por IAP (como admin):
 
-   gcloud compute ssh admin@orca-cliente-a --zone=us-central1-a --project=bove-orca --tunnel-through-iap \
+   gcloud compute ssh orca-admin@orca-cliente-a --zone=us-central1-a --project=bove-orca --tunnel-through-iap \
      --command='sudo google_metadata_script_runner startup'
 
 Progreso (sin secretos): sudo cat /var/log/orca-startup.log
