@@ -9,7 +9,7 @@ Checklist de la spec (sección 4, Fase 5) con el comando exacto, el resultado es
   y cualquier token. El script ya enmascara IPs y correos; revisa igual.
 - Estado: `PENDIENTE` hasta que el dueño confirme que `orca-cliente-a` existe y pasó los pasos manuales.
 
-> Última ejecución: 2026-11-10 (desde el sandbox del workspace de setup, fuera de la VPC; `verify-client.sh cliente-a` → PASS=25 FAIL=0 WARN=1 SKIP=1) · Versión de Orca en la VM: 1.4.251 · Versión en el Mac: 1.4.251
+> Última ejecución: 2026-11-10 (desde el sandbox del workspace de setup, fuera de la VPC; `verify-client.sh cliente-a` → PASS=25 FAIL=0 WARN=1 SKIP=1; VM redimensionada después a n4-standard-4) · Versión de Orca en la VM: 1.4.251 · Versión en el Mac: 1.4.251
 
 ## Resumen
 
@@ -23,7 +23,7 @@ Checklist de la spec (sección 4, Fase 5) con el comando exacto, el resultado es
 | 2.3 | ACL: dispositivo no autorizado no accede | manual | conexión rechazada/timeout | Pendiente de probar desde un dispositivo no autorizado. ACL: solo la cuenta del dueño → `tag:orca-cliente-a` tcp:6768 | PENDIENTE |
 | 3.1 | `orca-ide serve service status` = running | script `SVC-01` | running | `SVC-01` PASS: `orca-serve.service` live, active (running) | PASS |
 | 3.2 | Servicio habilitado + linger | script `SVC-02` | linger `yes`, unidad `enabled` | `SVC-02` PASS: linger yes, unidad enabled | PASS |
-| 3.3 | Sobrevive a `sudo reboot` | manual + script antes/después | running; arranque (`SVC-03`) cambia | Pendiente: el dueño tenía sesiones abiertas en la VM; se hará con `sudo reboot` (nunca `instances reset`, ver nota) | PENDIENTE |
+| 3.3 | Sobrevive a `sudo reboot` | manual + script antes/después | running; arranque (`SVC-03`) cambia | PASS 2026-11-10 (stop → set-machine-type n4-standard-4 → start): startup OK en el arranque, `orca-serve.service` active, puerto 6768 escuchando, Tailscale online con tag. Nunca `instances reset` (ver nota) | PASS |
 | 4.1 | Mac: servidor **Connected** | manual | `Connected` | PASS (captura del dueño 2026-11-10): `orca-cliente-a` · `100.x:6768` · v1.4.251 · Connected. Tras cerrar el `serve` de pareo y volver al servicio, el Mac siguió conectado | PASS |
 | 4.2 | Mac: crear worktree en repo de prueba | manual | worktree visible en la VM | Pendiente de que el dueño cree un worktree desde el Mac | PENDIENTE |
 | 5.1 | Claude Code instalado para `orca` | script `AGT-01` | versión impresa | `AGT-01` PASS: Claude Code 2.1.322 | PASS |
