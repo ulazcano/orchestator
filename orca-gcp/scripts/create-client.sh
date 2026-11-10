@@ -88,9 +88,8 @@ main() {
   fi
 
   # --- 2. Cuenta de servicio del cliente (workspace 0) -------------------------
-  # TODO(workspace 0): bootstrap-project.sh debe aceptar `client-sa <slug>` y ser idempotente:
-  #   crear $SERVICE_ACCOUNT y darle roles/secretmanager.secretAccessor SOLO sobre $SECRET_TS_AUTHKEY
-  #   (y logging.logWriter si hace falta). Debe correr DESPUÉS de crear el secreto (paso 1).
+  # bootstrap-project.sh client-sa (workspace 0): idempotente; crea la SA y da secretAccessor SOLO
+  # sobre $SECRET_TS_AUTHKEY, por eso corre DESPUÉS de crear el secreto (paso 1).
   local bootstrap_args=("$BOOTSTRAP_SCRIPT" client-sa "$CLIENT")
   [[ $DRY_RUN -eq 1 ]] && bootstrap_args+=(--dry-run)
   if [[ -f "$BOOTSTRAP_SCRIPT" ]]; then

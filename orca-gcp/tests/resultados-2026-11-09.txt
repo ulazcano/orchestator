@@ -1,4 +1,5 @@
 == Sintaxis y shellcheck ==
+  ok   bash -n bootstrap-project.sh
   ok   bash -n create-client.sh
   ok   bash -n destroy-client.sh
   ok   bash -n lib.sh
@@ -7,6 +8,7 @@
   ok   bash -n run-tests.sh
   ok   bash -n startup-in-container.sh
   ok   bash -n gcloud
+  ok   shellcheck bootstrap-project.sh
   ok   shellcheck create-client.sh
   ok   shellcheck destroy-client.sh
   ok   shellcheck lib.sh
@@ -117,7 +119,7 @@
   ok   orca-ide: 1.4.255
   ok   orca-ide instalado en la versión fijada 1.4.255
   ok   orca-ide retenido (apt-mark hold): sin auto-update
-  ok   Claude Code instalado para orca: 2.1.321 (Claude Code)
+  ok   Claude Code instalado para orca: 2.1.322 (Claude Code)
   ok   Claude Code pertenece a orca (no a root)
   ok   checksum sha512 verificado contra latest-linux.yml
   ok   orca-ide serve service install --port 6768 --dry-run genera una unidad con --supervise y el puerto
@@ -178,4 +180,4 @@
 Resultado contenedor: 65 ok, 0 fallos
   ok   prueba de contenedor
 
-Resultado: 74 ok, 0 fallos
+Resultado: 76 ok, 0 fallos
