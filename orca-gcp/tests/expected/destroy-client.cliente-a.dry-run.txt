@@ -1,0 +1,42 @@
+[info] MODO DRY-RUN: no se consulta ni se borra nada en GCP; se asume que todo existe
+
+Proyecto: bove-orca | Cliente: cliente-a
+SE BORRARÁ (irreversible):
+  - VM orca-cliente-a (us-central1-a)
+  - Disco orca-cliente-a y todos sus datos (repos, credenciales, historial de Orca)
+  - Secreto tailscale-authkey-cliente-a (todas sus versiones)
+  - Cuenta de servicio orca-vm-cliente-a@bove-orca.iam.gserviceaccount.com
+  - Política de horario orca-horario-cliente-a
+  - Política de snapshots orca-snapshots-cliente-a
+SE CONSERVARÁ:
+  - Snapshots del disco (usa --delete-snapshots para borrarlos; siguen generando costo)
+
+[info] (dry-run) en una ejecución real se te pediría escribir el slug 'cliente-a' para confirmar.
+[dry-run] gcloud compute instances delete orca-cliente-a \
+    --project=bove-orca \
+    --zone=us-central1-a \
+    --delete-disks=all \
+    --quiet
+[dry-run] gcloud compute resource-policies delete orca-horario-cliente-a \
+    --project=bove-orca \
+    --region=us-central1 \
+    --quiet
+[dry-run] gcloud compute resource-policies delete orca-snapshots-cliente-a \
+    --project=bove-orca \
+    --region=us-central1 \
+    --quiet
+[dry-run] gcloud secrets delete tailscale-authkey-cliente-a \
+    --project=bove-orca \
+    --quiet
+[dry-run] gcloud iam service-accounts delete orca-vm-cliente-a@bove-orca.iam.gserviceaccount.com \
+    --project=bove-orca \
+    --quiet
+
+Pendiente de tu parte (no se puede automatizar sin tus credenciales de Tailscale):
+  - Elimina el dispositivo "orca-cliente-a" en https://login.tailscale.com/admin/machines
+    y borra el tag tag:orca-cliente-a de tu ACL si ya no se usa.
+  - Quita el servidor de Settings > Remote Orca Servers en tu Mac.
+  - Revoca el token de GitHub y las sesiones de Claude/Codex que usaste en esa VM.
+Nota: bootstrap-project.sh client-sa otorga logging.logWriter a nivel de proyecto; al borrar la
+cuenta de servicio queda un binding huérfano "deleted:serviceAccount:..." en la política IAM del
+proyecto (inofensivo; se puede limpiar a mano o con un subcomando client-sa-delete del workspace 0).

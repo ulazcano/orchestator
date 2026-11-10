@@ -1,0 +1,64 @@
+[info] Cliente: cliente-a | VM: orca-cliente-a | n4-standard-8 | 200 GB hyperdisk-balanced | us-central1-a | proyecto bove-orca
+[info] Orca fijada en la versión 1.4.255 (sin auto-update)
+[info] MODO DRY-RUN: no se ejecuta ni se consulta nada en GCP
+[info] (dry-run) no se consulta GCP; se asume que no existe: VM orca-cliente-a
+[info] (dry-run) no se consulta GCP; se asume que no existe: secreto tailscale-authkey-cliente-a
+[dry-run] gcloud secrets create tailscale-authkey-cliente-a \
+    --project=bove-orca \
+    --replication-policy=automatic \
+    --labels=cliente=cliente-a
+[aviso] TODO: <REPO>/orca-gcp/tests/bin/no-existe-bootstrap-project.sh aún no existe (workspace 0). Llamada prevista:
+[dry-run] bash <REPO>/orca-gcp/tests/bin/no-existe-bootstrap-project.sh client-sa cliente-a \
+    --dry-run
+[dry-run] gcloud compute instances create orca-cliente-a \
+    --project=bove-orca \
+    --zone=us-central1-a \
+    --machine-type=n4-standard-8 \
+    --network=orca-vpc \
+    --subnet=orca-subnet \
+    --tags=orca \
+    --image-family=ubuntu-2404-lts-amd64 \
+    --image-project=ubuntu-os-cloud \
+    --boot-disk-size=200GB \
+    --boot-disk-type=hyperdisk-balanced \
+    --service-account=orca-vm-cliente-a@bove-orca.iam.gserviceaccount.com \
+    --scopes=cloud-platform \
+    --shielded-secure-boot \
+    --shielded-vtpm \
+    --shielded-integrity-monitoring \
+    --labels=cliente=cliente-a \
+    --metadata=client=cliente-a,orca-version=1.4.255 \
+    --metadata-from-file=startup-script=<REPO>/orca-gcp/scripts/vm-startup.sh
+[dry-run] gcloud compute disks update orca-cliente-a \
+    --project=bove-orca \
+    --zone=us-central1-a \
+    --update-labels=cliente=cliente-a
+[info] (dry-run) se adjuntaría orca-horario-cliente-a solo si existe (la crea el workspace 2 con schedule-client.sh):
+[dry-run] gcloud compute instances add-resource-policies orca-cliente-a \
+    --project=bove-orca \
+    --zone=us-central1-a \
+    --resource-policies=orca-horario-cliente-a
+[info] (dry-run) se adjuntaría orca-snapshots-cliente-a solo si existe (la crea el workspace 2 con schedule-client.sh):
+[dry-run] gcloud compute disks add-resource-policies orca-cliente-a \
+    --project=bove-orca \
+    --zone=us-central1-a \
+    --resource-policies=orca-snapshots-cliente-a
+
+================================================================
+Siguiente paso (lo haces tú; el valor nunca pasa por el agente)
+================================================================
+1. En https://login.tailscale.com/admin/settings/keys genera una auth key con:
+   tag tag:orca-cliente-a, expiración corta, de un solo uso, pre-aprobada.
+   (El tag debe existir en "tagOwners" de tu ACL.)
+2. Cárgala tú mismo en Secret Manager (pégala y termina con Ctrl-D; no queda en el historial):
+
+   gcloud secrets versions add tailscale-authkey-cliente-a --project=bove-orca --data-file=-
+
+La VM espera la key hasta ~10 min tras el arranque. Si ya pasó ese tiempo, vuelve a
+ejecutar el startup script por IAP (como admin):
+
+   gcloud compute ssh admin@orca-cliente-a --zone=us-central1-a --project=bove-orca --tunnel-through-iap \
+     --command='sudo google_metadata_script_runner startup'
+
+Progreso (sin secretos): sudo cat /var/log/orca-startup.log
+Luego sigue docs/pasos-manuales.md (logins de Claude/GitHub y pareo con tu Mac).

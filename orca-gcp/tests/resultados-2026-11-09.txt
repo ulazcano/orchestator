@@ -1,0 +1,187 @@
+== Sintaxis y shellcheck ==
+  ok   bash -n bootstrap-project.sh
+  ok   bash -n create-client.sh
+  ok   bash -n destroy-client.sh
+  ok   bash -n lib.sh
+  ok   bash -n schedule-client.sh
+  ok   bash -n verify-client.sh
+  ok   bash -n vm-startup.sh
+  ok   bash -n run-startup-container.sh
+  ok   bash -n run-tests.sh
+  ok   bash -n startup-in-container.sh
+  ok   bash -n gcloud
+  ok   shellcheck bootstrap-project.sh
+  ok   shellcheck create-client.sh
+  ok   shellcheck destroy-client.sh
+  ok   shellcheck lib.sh
+  ok   shellcheck schedule-client.sh
+  ok   shellcheck verify-client.sh
+  ok   shellcheck vm-startup.sh
+  ok   shellcheck run-startup-container.sh
+  ok   shellcheck run-tests.sh
+  ok   shellcheck startup-in-container.sh
+  ok   shellcheck gcloud
+== Dry-run contra salida esperada ==
+  ok   salida == expected/create-client.cliente-a.dry-run.txt
+  ok   salida == expected/destroy-client.cliente-a.dry-run.txt
+  ok   salida == expected/destroy-client.cliente-a.dry-run.keep-secret.txt
+== Contenido de create-client (dry-run) ==
+  ok   n4-standard-8 por defecto
+  ok   200 GB por defecto
+  ok   hyperdisk-balanced
+  ok   tag de red orca
+  ok   etiqueta cliente en VM
+  ok   etiqueta cliente en disco
+  ok   metadata solo client y orca-version
+  ok   startup-script desde archivo
+  ok   IP externa efímera (sin --no-address)
+  ok   sin auth keys en la salida
+  ok   imprime la instrucción para cargar la key (a mano)
+  ok   no hay 'versions add' ejecutable
+  ok   llamada a bootstrap-project.sh client-sa cliente-a presente
+== Validaciones y ayuda ==
+  ok   slug inválido rechazado: 'Cliente'
+  ok   slug inválido rechazado: 'cliente_a'
+  ok   slug inválido rechazado: '-a'
+  ok   slug inválido rechazado: 'a-'
+  ok   slug inválido rechazado: '1abc'
+  ok   slug inválido rechazado: 'abcdefghijklmnopqrstuvwxyz'
+  ok   slug inválido rechazado: ''
+  ok   slug válido aceptado: 'cliente-a'
+  ok   slug válido aceptado: 'a'
+  ok   slug válido aceptado: 'abc-123'
+  ok   slug válido aceptado: 'empresa-x-2'
+  ok   sin ORCA_VERSION falla con mensaje claro
+  ok   create-client --help funciona sin ORCA_VERSION
+  ok   destroy-client --help
+  ok   flag desconocido rechazado
+  ok   disco < 50 GB rechazado
+  ok   disk-gb con cero inicial rechazado
+  ok   ORCA_VERSION con sufijo rc rechazada (vm-startup.sh solo acepta X.Y.Z)
+  ok   machine-type y disk-gb posicionales
+== create-client con stub de gcloud (modo real, sin GCP) ==
+  ok   VM existente: lo dice, sale con 0 y no la recrea ni crea secretos
+  ok   VM existente sin políticas: solo reasegura la etiqueta del disco
+  ok   VM existente + políticas nuevas: se adjuntan al reejecutar (completa ejecuciones a medias)
+  ok   gcloud ausente: aborta (no lo confunde con 'recurso inexistente')
+  ok   destroy con gcloud ausente: aborta, no dice 'Nada que hacer'
+  ok   proyecto inaccesible: aborta antes de crear nada
+  ok   VM nueva: crea secreto, VM y etiqueta disco; sin políticas si no existen
+  ok   nunca ejecuta 'secrets versions add'
+  ok   secreto existente no se recrea; políticas existentes se adjuntan
+  ok   sin bootstrap-project.sh ni cuenta de servicio: aborta antes de crear la VM
+  ok   error de permisos se muestra tal cual y aborta (sin reintentos)
+  ok   con bootstrap-project.sh presente: lo invoca (client-sa cliente-a) y crea la VM
+== destroy-client con stub de gcloud ==
+  ok   confirmación incorrecta: no borra nada
+  ok   confirmación vacía/EOF: no borra nada
+  ok   confirmación correcta: borra VM, secreto, SA y políticas
+  ok   snapshots se conservan por defecto
+  ok   --keep-secret conserva el secreto y revoca el acceso de la SA
+  ok   --keep-secret: si falla quitar el binding, igual borra la cuenta de servicio
+  ok   --delete-snapshots borra los snapshots
+  ok   sin recursos: no hace nada
+  ok   solo lista y borra lo que existe
+== Higiene de secretos ==
+  ok   sin patrones de secretos en orca-gcp/
+== vm-startup.sh en contenedor ubuntu:24.04 ==
+== 1. Primera ejecución ==
+  ok   vm-startup.sh termina con 0
+  ok   log: paso base-packages marcado
+  ok   log: paso users marcado
+  ok   log: paso linger marcado
+  ok   log: paso node-lts marcado
+  ok   log: paso gh marcado
+  ok   log: paso tailscale-install marcado
+  ok   log: paso orca-install-1.4.255 marcado
+  ok   log: paso orca-service-6768 marcado
+  ok   log: paso claude-code marcado
+  ok   log: startup completo
+== 2. Usuarios y sudo ==
+  ok   usuario orca existe
+  ok   usuario admin existe
+  ok   ~orca/projects creado y de orca
+  ok   orca sin grupos privilegiados (orca)
+  ok   orca no puede hacer sudo (sudo -n true falla)
+  ok   orca no puede 'sudo id'
+  ok   sudo -l -U orca sin permisos ((ALL : ALL) !ALL)
+  ok   aun en google-sudoers, orca no puede sudo (override zz-orca-nosudo)
+  ok   admin tiene sudo
+  ok   orca con contraseña bloqueada
+  ok   admin con contraseña bloqueada
+  ok   sudoers válido (visudo -c)
+== 3. Herramientas instaladas ==
+  ok   git: git version 2.43.0
+  ok   gh: gh version 2.103.3 (2026-10-26)
+  ok   curl: curl 8.5.0 (x86_64-pc-linux-gnu) libcurl/8.5.0 OpenSSL/3.0.13 zlib/1.3 brotli/1.1.0 zstd/1.5.5 libidn2/2.3.7 libpsl/0.21.2 (+libidn2/2.3.7) libssh/0.10.6/openssl/zlib nghttp2/1.59.0 librtmp/2.3 OpenLDAP/2.6.10
+  ok   jq: jq-1.7
+  ok   make: GNU Make 4.3
+  ok   gcc: gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0
+  ok   node: v26.13.0
+  ok   npm: 11.20.0
+  ok   tailscale: 1.104.5
+  ok   orca-ide: 1.4.255
+  ok   orca-ide instalado en la versión fijada 1.4.255
+  ok   orca-ide retenido (apt-mark hold): sin auto-update
+  ok   Claude Code instalado para orca: 2.1.322 (Claude Code)
+  ok   Claude Code pertenece a orca (no a root)
+  ok   checksum sha512 verificado contra latest-linux.yml
+  ok   orca-ide serve service install --port 6768 --dry-run genera una unidad con --supervise y el puerto
+       (unidad generada, informativo):
+       | Would write /home/orca/.config/systemd/user/orca-serve.service:
+       | 
+       | [Unit]
+       | Description=Orca server (orca serve --supervise)
+       | StartLimitIntervalSec=900
+       | StartLimitBurst=5
+       | 
+       | [Service]
+       | Type=simple
+       | ExecStart=/usr/bin/orca-ide serve --supervise --no-pairing --port 6768
+       | Environment=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+       | Environment=ORCA_USER_DATA_PATH=/home/orca/.config/orca
+       | Restart=on-failure
+       | RestartSec=10
+       | TimeoutStopSec=90
+       | KillMode=process
+       | 
+       | [Install]
+       | WantedBy=default.target
+  ok   la unidad se llamará orca-serve.service
+== 4. Idempotencia (segunda ejecución) ==
+  ok   segunda ejecución termina con 0
+  ok   sin cambios en passwd/group/shadow/sudoers/paquetes/home
+  ok   la 2ª ejecución salta todos los pasos ya hechos
+  ok   la 2ª ejecución registra SKIP por paso (10 SKIP)
+  ok   solo se añadió el OK final de startup
+== 5. Fallo aislado (versión de Orca inexistente) ==
+  ok   versión inexistente: termina con error (1)
+  ok   el log marca FAIL en orca-install-0.0.1
+  ok   los pasos siguientes siguen corriendo tras un fallo
+  ok   client inválido 'Cliente' rechazado
+  ok   client inválido '' rechazado
+== 6. Checksum: descarga corrupta ==
+  ok   sha512 incorrecto: aborta sin instalar
+  ok   sin latest-linux.yml: falla cerrada (no instala sin verificar)
+  ok   published_sha512 extrae el hash del archivo correcto
+== 7. Auth key: nunca a disco, log ni argv (gcloud/tailscale falsos) ==
+  ok   tailscale-up: lee el secreto y ejecuta 'tailscale up'
+  ok   tailscale recibió la key íntegra por el descriptor (file:/dev/fd/3)
+  ok   hostname y tag correctos en 'tailscale up'
+  ok   la key NO aparece en argv
+  ok   la key NO aparece en el log ni en la salida
+  ok   la key NO está en ningún archivo (barrido de /tmp /var /root /home /etc)
+  ok   con Tailscale ya conectado: SKIP, no vuelve a ejecutar 'tailscale up'
+  ok   sin valor en el secreto: FAIL con instrucciones (no se cuelga)
+== 7b. Cambio de versión con el paquete en hold ==
+  ok   ORCA_VERSION=1.4.254 sobre una instalación en hold: termina con 0
+  ok   orca-ide quedó en 1.4.254
+  ok   el paquete vuelve a quedar en hold
+== 8. Experimento: ¿acepta el tailscale real '--auth-key=file:/dev/fd/3'? (key falsa) ==
+  rc=1 salida: backend error: invalid key: API key does not exist
+  ok   el mensaje de tailscale no indica fallo al leer el archivo (el rechazo, si hay, viene del servidor)
+
+Resultado contenedor: 65 ok, 0 fallos
+  ok   prueba de contenedor
+
+Resultado: 80 ok, 0 fallos
