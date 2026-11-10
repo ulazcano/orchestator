@@ -89,3 +89,9 @@ Ver [`docs/costos.md`](docs/costos.md): ≈ $289/mes 24/7, ≈ $125 con horario 
 6. **Precio de `n4-standard-8`** tomado de agregadores (la página oficial de GCP no entrega las tablas sin JavaScript). Confírmalo con la calculadora de precios antes de fijar presupuestos.
 7. **Sintaxis `tcp:6768` en los grants de Tailscale** no figura en los ejemplos de la doc; validar con *Preview rules*.
 8. **Comandos locales con autenticación del Mac** (CLIs con login, VPN, llavero, MFA) usados hoy desde Conductor: son materia de la prueba crítica (workspace 3). Dato que falta: lista de esos comandos.
+
+## Incorporar al equipo (clientes de Orca en Mac y Windows)
+
+- [`docs/guia-equipo-mac.md`](docs/guia-equipo-mac.md): guía de cero a conectado para macOS, con la sección "Para el dueño" (invitación a Tailscale, ACL por grupo, link de pareo, revocación).
+- [`docs/guia-equipo-windows.md`](docs/guia-equipo-windows.md): lo mismo para Windows.
+- `scripts/pair-client.sh <slug> [--mobile]`: el dueño genera un link de pareo por persona desde su Mac (detiene el servicio, arranca `serve` con pareo, imprime el link solo en su terminal, y restaura el servicio al pulsar Enter).
