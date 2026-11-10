@@ -66,3 +66,5 @@ Actualiza esta sección en tu PR con una línea por hito (fecha, workspace, qué
 
 - 2026-11-09 · setup · Repo inicializado con spec y plan.
 - 2026-11-09 · ws2 · Docs, costos y horario: `schedule-client.sh` (probado con `--dry-run`, shellcheck limpio), `pasos-manuales.md`, `costos.md` y `README.md` listos en PR. Pendiente del dueño: confirmar auto-apagado por inactividad (solo propuesto) y elegir cuenta de facturación/monto del presupuesto. TODO ws1: disco con `provisioned-iops=3000,provisioned-throughput=140` (ahorra ≈ $18/mes) e invocar `schedule-client.sh` desde `create-client.sh`.
+- 2026-11-09 · ws0 · Fase 0 completa: diagnóstico en `orca-gcp/docs/diagnostico.md` (facturación vinculada; Compute/IAP/Secret Manager aún sin habilitar; Orca estable v1.4.255, Mac en 1.4.251).
+- 2026-11-09 · ws0 · Fase 1: `orca-gcp/scripts/bootstrap-project.sh` (apis, network, firewall, client-sa, purge-default-network, --dry-run, shellcheck limpio). Aplicado en GCP (APIs, orca-vpc, orca-subnet, regla IAP; red default eliminada).
