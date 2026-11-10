@@ -145,6 +145,16 @@ gh auth setup-git    # git usa el token de gh para clonar/pushear
 gh auth status
 ```
 
+## 4b. Identidad de git del usuario `orca`
+
+Sin esto, Orca no puede crear proyectos ni commits en la VM ("Git author identity is not configured"). Usa el nombre y correo **del cliente**:
+
+```bash
+git config --global user.name "Nombre del cliente"
+git config --global user.email "correo@cliente.com"
+git config --global init.defaultBranch main
+```
+
 ## 5. Parear el servidor con tu Mac
 
 El servicio de Orca (`orca-ide serve service`) **no imprime el link de pareo**; hay que correr `serve` una vez en primer plano.
