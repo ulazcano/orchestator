@@ -67,10 +67,20 @@ Los dispositivos con tag **no** expiran su node key por defecto, y expirar la au
 Sin que la clave quede en el historial ni en pantalla:
 
 ```bash
+# bash
 read -rsp 'Tailscale auth key: ' TS_KEY; echo
 printf '%s' "$TS_KEY" | gcloud secrets versions add "tailscale-authkey-<slug>" --project=bove-orca --data-file=-
 unset TS_KEY
 ```
+
+```zsh
+# zsh (el shell por defecto de macOS: `read -p` significa otra cosa y deja la variable vacía)
+read -rs 'TS_KEY?Tailscale auth key: '; echo
+printf '%s' "$TS_KEY" | gcloud secrets versions add "tailscale-authkey-<slug>" --project=bove-orca --data-file=-
+unset TS_KEY
+```
+
+Alternativa sin terminal: consola de GCP → Secret Manager → `tailscale-authkey-<slug>` → **New version**.
 
 ### 1.4 Si la VM ya arrancó sin la clave, reejecutar el startup script
 
