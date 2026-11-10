@@ -39,7 +39,7 @@ IMAGE_FAMILY="ubuntu-2404-lts-amd64"; IMAGE_PROJECT="ubuntu-os-cloud"
 ORCA_VERSION="${ORCA_VERSION:?}" # fijada por variable, misma que el Mac; sin auto-update
 ORCA_PORT="6768"
 ORCA_USER="orca"                # sin sudo
-ADMIN_USER="admin"              # con sudo, solo IAP
+ADMIN_USER="orca-admin"              # con sudo, solo IAP
 SCHEDULE_NAME="orca-horario-${CLIENT}"   # 08:00 on / 21:00 off, lun-vie, America/Santiago
 SNAPSHOT_POLICY="orca-snapshots-${CLIENT}" # diario, retención 7 días
 STARTUP_LOG="/var/log/orca-startup.log"  # sin secretos
@@ -49,7 +49,7 @@ Convenciones de scripts: `#!/usr/bin/env bash`, `set -euo pipefail`, variables a
 idempotentes, `--dry-run` que imprime los comandos `gcloud` sin ejecutarlos, `--help`,
 cero secretos incrustados o impresos. `shellcheck` limpio.
 
-Metadata de la VM: solo `client`, `orca-version`, `startup-script`. **Nunca** la authkey.
+Metadata de la VM: solo `client`, `orca-version`, `block-project-ssh-keys=TRUE`, `startup-script`. **Nunca** la authkey.
 La VM lee el secreto con `gcloud secrets versions access latest --secret="$SECRET_TS_AUTHKEY"`
 usando su cuenta de servicio (rol `roles/secretmanager.secretAccessor` solo sobre ese secreto).
 
@@ -70,3 +70,5 @@ Actualiza esta sección en tu PR con una línea por hito (fecha, workspace, qué
 - 2026-11-09 · ws3 · Parte A lista en PR: `verify-client.sh` (solo lectura, `--dry-run`, shellcheck limpio, lógica probada con `gcloud` simulado), `docs/verificacion.md` (checklist Fase 5 con resultados vacíos) y `docs/comandos-mac-auth.md` (marco de clasificación + bloque de recolección; **bloqueado** a la espera de que el dueño pegue las salidas del Mac: sin `RunLocalCommand`). Parte B (ejecución real) pendiente de que exista `orca-cliente-a`.
 - 2026-11-09 · ws0 · Fase 0 completa: diagnóstico en `orca-gcp/docs/diagnostico.md` (facturación vinculada; Compute/IAP/Secret Manager aún sin habilitar; Orca estable v1.4.255, Mac en 1.4.251).
 - 2026-11-09 · ws0 · Fase 1: `orca-gcp/scripts/bootstrap-project.sh` (apis, network, firewall, client-sa, purge-default-network, --dry-run, shellcheck limpio). Aplicado en GCP (APIs, orca-vpc, orca-subnet, regla IAP; red default eliminada).
+- 2026-11-10 · setup · Ejecución real aprobada por el dueño: `orca-cliente-a` creada (Orca 1.4.251, checksum ok), horario y snapshots adjuntos. Dos fallos encontrados y corregidos en el startup: `useradd admin` choca con el grupo `admin` de Ubuntu (ahora `orca-admin`) y un `instances reset` dejó la unidad de Orca en 0 bytes (paso del servicio ahora autorreparable). Pendiente del dueño: auth key de Tailscale, logins y pareo.
+

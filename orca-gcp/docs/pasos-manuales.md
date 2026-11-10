@@ -67,10 +67,20 @@ Los dispositivos con tag **no** expiran su node key por defecto, y expirar la au
 Sin que la clave quede en el historial ni en pantalla:
 
 ```bash
+# bash
 read -rsp 'Tailscale auth key: ' TS_KEY; echo
 printf '%s' "$TS_KEY" | gcloud secrets versions add "tailscale-authkey-<slug>" --project=bove-orca --data-file=-
 unset TS_KEY
 ```
+
+```zsh
+# zsh (el shell por defecto de macOS: `read -p` significa otra cosa y deja la variable vacía)
+read -rs 'TS_KEY?Tailscale auth key: '; echo
+printf '%s' "$TS_KEY" | gcloud secrets versions add "tailscale-authkey-<slug>" --project=bove-orca --data-file=-
+unset TS_KEY
+```
+
+Alternativa sin terminal: consola de GCP → Secret Manager → `tailscale-authkey-<slug>` → **New version**.
 
 ### 1.4 Si la VM ya arrancó sin la clave, reejecutar el startup script
 
@@ -93,7 +103,11 @@ gcloud compute ssh "orca-<slug>" --zone us-central1-a --tunnel-through-iap --pro
 ```
 
 No hay IP pública entrante ni puerto 22 abierto a internet: solo el rango IAP `35.235.240.0/20`.
-*TODO (workspace 1):* si `create-client.sh` fija un usuario/clave distinto (`admin` con OS Login o metadatos), indicar aquí el comando exacto (p. ej. `admin@orca-<slug>`).
+El usuario con sudo es `orca-admin` (sin OS Login; `gcloud compute ssh` añade tu llave a la metadata de la instancia, con `block-project-ssh-keys=TRUE`):
+
+```bash
+gcloud compute ssh "orca-admin@orca-<slug>" --zone us-central1-a --tunnel-through-iap --project=bove-orca
+```
 
 Cambia al usuario sin sudo, que es quien corre el servidor de Orca y los agentes:
 
@@ -129,6 +143,16 @@ El flujo interactivo (abrir una URL en tu navegador y pegar un código) **no est
 gh auth login        # GitHub.com → HTTPS → "Paste an authentication token" (se escribe oculto)
 gh auth setup-git    # git usa el token de gh para clonar/pushear
 gh auth status
+```
+
+## 4b. Identidad de git del usuario `orca`
+
+Sin esto, Orca no puede crear proyectos ni commits en la VM ("Git author identity is not configured"). Usa el nombre y correo **del cliente**:
+
+```bash
+git config --global user.name "Nombre del cliente"
+git config --global user.email "correo@cliente.com"
+git config --global init.defaultBranch main
 ```
 
 ## 5. Parear el servidor con tu Mac

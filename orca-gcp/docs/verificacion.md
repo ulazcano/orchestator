@@ -9,30 +9,30 @@ Checklist de la spec (sección 4, Fase 5) con el comando exacto, el resultado es
   y cualquier token. El script ya enmascara IPs y correos; revisa igual.
 - Estado: `PENDIENTE` hasta que el dueño confirme que `orca-cliente-a` existe y pasó los pasos manuales.
 
-> Última ejecución: _(sin ejecutar)_ · Versión de Orca en la VM: _(vacío)_ · Versión en el Mac: _(vacío)_
+> Última ejecución: 2026-11-10 (desde el sandbox del workspace de setup, fuera de la VPC; `verify-client.sh cliente-a` → PASS=25 FAIL=0 WARN=1 SKIP=1) · Versión de Orca en la VM: 1.4.251 · Versión en el Mac: 1.4.251
 
 ## Resumen
 
 | ID | Ítem de la spec | Cómo | Esperado | Resultado real | Estado |
 |----|-----------------|------|----------|----------------|--------|
-| 1.1 | Sin reglas de ingreso públicas en `orca-vpc` | script `FW-01`, `FW-03` | solo `orca-allow-iap-ssh` | | PENDIENTE |
-| 1.2 | La regla IAP es mínima | script `FW-02` | `35.235.240.0/20`, `tcp:22`, tag `orca` | | PENDIENTE |
-| 1.3 | Escaneo externo a la IP efímera | script `SCAN-01` + manual | ningún puerto abierto | | PENDIENTE |
-| 2.1 | `tailscale status` con tag en la VM | script `TSI-01` | `Running`, `orca-cliente-a`, `tag:orca-cliente-a` | | PENDIENTE |
-| 2.2 | VM visible y alcanzable desde el Mac | script `TS-01` (si corre en el Mac) | `6768` responde por Tailscale | | PENDIENTE |
-| 2.3 | ACL: dispositivo no autorizado no accede | manual | conexión rechazada/timeout | | PENDIENTE |
-| 3.1 | `orca-ide serve service status` = running | script `SVC-01` | running | | PENDIENTE |
-| 3.2 | Servicio habilitado + linger | script `SVC-02` | linger `yes`, unidad `enabled` | | PENDIENTE |
-| 3.3 | Sobrevive a `sudo reboot` | manual + script antes/después | running; arranque (`SVC-03`) cambia | | PENDIENTE |
-| 4.1 | Mac: servidor **Connected** | manual | `Connected` | | PENDIENTE |
-| 4.2 | Mac: crear worktree en repo de prueba | manual | worktree visible en la VM | | PENDIENTE |
-| 5.1 | Claude Code instalado para `orca` | script `AGT-01` | versión impresa | | PENDIENTE |
-| 5.2 | Agente vivo con la laptop cerrada | manual | proceso sigue y avanza | | PENDIENTE |
-| 6.1 | `sudo -n true` como `orca` falla | script `SUDO-01..03` | exit ≠ 0, sin grupos privilegiados | | PENDIENTE |
-| 7.1 | Sin credenciales del Mac en la VM | script `CRED-01..04` + manual | solo cuentas del cliente | | PENDIENTE |
-| 8.1 | Metadata sin secretos, SA mínima | script `META-*`, `IAM-*`, `LOG-01` | 3 claves; sin patrones | | PENDIENTE |
-| 8.2 | Horario y snapshots adjuntos | script `POL-01..03` | 08:00/21:00 lun-vie; retención 7 d | | PENDIENTE |
-| 9.1 | Prueba crítica (comandos con auth del Mac) | [`comandos-mac-auth.md`](./comandos-mac-auth.md) | clasificación (a)/(b)/(c) | | PENDIENTE |
+| 1.1 | Sin reglas de ingreso públicas en `orca-vpc` | script `FW-01`, `FW-03` | solo `orca-allow-iap-ssh` | `FW-01` PASS: única regla `orca-allow-iap-ssh`; `FW-03` PASS: ninguna desde 0.0.0.0/0 | PASS |
+| 1.2 | La regla IAP es mínima | script `FW-02` | `35.235.240.0/20`, `tcp:22`, tag `orca` | `FW-02` PASS: `35.235.240.0/20`, `tcp:22`, tag `orca` | PASS |
+| 1.3 | Escaneo externo a la IP efímera | script `SCAN-01` + manual | ningún puerto abierto | `SCAN-01` PASS; prueba manual con `/dev/tcp` a 22/80/443/6768 desde fuera: todos cerrados | PASS |
+| 2.1 | `tailscale status` con tag en la VM | script `TSI-01` | `Running`, `orca-cliente-a`, `tag:orca-cliente-a` | `TSI-01` PASS: Running, `orca-cliente-a`, `tag:orca-cliente-a` | PASS |
+| 2.2 | VM visible y alcanzable desde el Mac | script `TS-01` (si corre en el Mac) | `6768` responde por Tailscale | El Mac aparece en `tailscale status` de la VM y tiene una conexión establecida a :6768 (ver 4.1) | PASS |
+| 2.3 | ACL: dispositivo no autorizado no accede | manual | conexión rechazada/timeout | Pendiente de probar desde un dispositivo no autorizado. ACL: solo la cuenta del dueño → `tag:orca-cliente-a` tcp:6768 | PENDIENTE |
+| 3.1 | `orca-ide serve service status` = running | script `SVC-01` | running | `SVC-01` PASS: `orca-serve.service` live, active (running) | PASS |
+| 3.2 | Servicio habilitado + linger | script `SVC-02` | linger `yes`, unidad `enabled` | `SVC-02` PASS: linger yes, unidad enabled | PASS |
+| 3.3 | Sobrevive a `sudo reboot` | manual + script antes/después | running; arranque (`SVC-03`) cambia | Pendiente: el dueño tenía sesiones abiertas en la VM; se hará con `sudo reboot` (nunca `instances reset`, ver nota) | PENDIENTE |
+| 4.1 | Mac: servidor **Connected** | manual | `Connected` | PASS (captura del dueño 2026-11-10): `orca-cliente-a` · `100.x:6768` · v1.4.251 · Connected. Tras cerrar el `serve` de pareo y volver al servicio, el Mac siguió conectado | PASS |
+| 4.2 | Mac: crear worktree en repo de prueba | manual | worktree visible en la VM | Pendiente de que el dueño cree un worktree desde el Mac | PENDIENTE |
+| 5.1 | Claude Code instalado para `orca` | script `AGT-01` | versión impresa | `AGT-01` PASS: Claude Code 2.1.322 | PASS |
+| 5.2 | Agente vivo con la laptop cerrada | manual | proceso sigue y avanza | Pendiente (manual) | PENDIENTE |
+| 6.1 | `sudo -n true` como `orca` falla | script `SUDO-01..03` | exit ≠ 0, sin grupos privilegiados | `SUDO-01..03` PASS: `sudo: a password is required`; sin grupos sudo/admin/docker/lxd; sudoers `(ALL : ALL) !ALL` | PASS |
+| 7.1 | Sin credenciales del Mac en la VM | script `CRED-01..04` + manual | solo cuentas del cliente | `CRED-01..02` PASS; `CRED-04` WARN solo `SSH_AUTH_SOCK` (heredado de la sesión SSH del dueño). **Atención:** las cuentas cargadas (Claude y gh) son las del dueño, no las de un cliente; válido solo para el piloto | PASS (con nota) |
+| 8.1 | Metadata sin secretos, SA mínima | script `META-*`, `IAM-*`, `LOG-01` | 3 claves; sin patrones | `META-01..03`, `IAM-01..03`, `LOG-01` PASS. Metadata: client, orca-version, startup-script, block-project-ssh-keys, ssh-keys (instancia) | PASS |
+| 8.2 | Horario y snapshots adjuntos | script `POL-01..03` | 08:00/21:00 lun-vie; retención 7 d | `POL-01..03` PASS: `0 8 * * 1-5` / `0 21 * * 1-5` America/Santiago; snapshots diarios, 7 días | PASS |
+| 9.1 | Prueba crítica (comandos con auth del Mac) | [`comandos-mac-auth.md`](./comandos-mac-auth.md) | clasificación (a)/(b)/(c) | Bloqueado: falta que el dueño pegue la salida del bloque de recolección del Mac | PENDIENTE |
 
 Convención de Estado: `PASS`, `FAIL`, `PENDIENTE`, `N/A (motivo)`.
 
@@ -105,7 +105,7 @@ Nota: no se imprime la IP en este documento; tapar en la salida pegada.
 ### 2.1 Estado en la VM, con tag
 
 ```bash
-gcloud compute ssh admin@orca-cliente-a --zone us-central1-a --project bove-orca --tunnel-through-iap \
+gcloud compute ssh orca-admin@orca-cliente-a --zone us-central1-a --project bove-orca --tunnel-through-iap \
   --command 'sudo tailscale status --json | jq "{estado: .BackendState, host: .Self.HostName, tags: .Self.Tags}"'
 ```
 
@@ -171,7 +171,7 @@ sin necesitar un segundo dispositivo:
 ### 3.1 y 3.2 Estado, habilitación y linger
 
 ```bash
-gcloud compute ssh admin@orca-cliente-a --zone us-central1-a --project bove-orca --tunnel-through-iap --command '
+gcloud compute ssh orca-admin@orca-cliente-a --zone us-central1-a --project bove-orca --tunnel-through-iap --command '
   U=$(id -u orca)
   sudo -u orca -H env XDG_RUNTIME_DIR=/run/user/$U orca-ide serve service status
   sudo -u orca -H env XDG_RUNTIME_DIR=/run/user/$U systemctl --user list-unit-files --type=service | grep -i orca
@@ -193,8 +193,9 @@ si no hay *lingering*. La doc **no documenta** `service start/stop`; solo `insta
 
 ```bash
 # 1) Antes: anotar la hora de arranque y el estado (comando de 3.1)
-# 2) Reiniciar (admin con sudo):
-gcloud compute ssh admin@orca-cliente-a --zone us-central1-a --project bove-orca --tunnel-through-iap --command 'sudo reboot'
+# 2) Reiniciar (orca-admin con sudo). Nunca `gcloud compute instances reset`: es un corte duro y deja archivos en 0 bytes
+#    (ocurrió el 2026-11-10: unidad de Orca masked y agent_session_ownership_unknown; ver orca-notas-doc.md §11).
+gcloud compute ssh orca-admin@orca-cliente-a --zone us-central1-a --project bove-orca --tunnel-through-iap --command 'sudo reboot'
 # 3) Esperar ~2 min y repetir el comando de 3.1, o:
 ./orca-gcp/scripts/verify-client.sh cliente-a        # SVC-01, SVC-02 y SVC-03 (hora de arranque nueva)
 tailscale status | grep orca-cliente-a                # la VM vuelve a la tailnet sola
@@ -221,7 +222,7 @@ Paso a paso (según https://www.onorca.dev/docs/remote-servers): en Orca del Mac
 
 ```bash
 # Evidencia complementaria desde la VM (el servicio no imprime el link de pareo):
-gcloud compute ssh admin@orca-cliente-a --zone us-central1-a --project bove-orca --tunnel-through-iap \
+gcloud compute ssh orca-admin@orca-cliente-a --zone us-central1-a --project bove-orca --tunnel-through-iap \
   --command 'sudo ss -tnp state established "( sport = :6768 )" | wc -l'
 ```
 
@@ -240,7 +241,7 @@ En Orca, abrir un proyecto del servidor remoto (repo de prueba del cliente en `~
 workspace/worktree nuevo desde la UI. La doc no describe el flujo de worktrees; se verifica el efecto en la VM:
 
 ```bash
-gcloud compute ssh admin@orca-cliente-a --zone us-central1-a --project bove-orca --tunnel-through-iap \
+gcloud compute ssh orca-admin@orca-cliente-a --zone us-central1-a --project bove-orca --tunnel-through-iap \
   --command 'sudo -u orca -H git -C /home/orca/projects/<repo-de-prueba> worktree list'
 ```
 
@@ -260,7 +261,7 @@ gcloud compute ssh admin@orca-cliente-a --zone us-central1-a --project bove-orca
 ### 5.1 Instalado y con cuenta del cliente
 
 ```bash
-gcloud compute ssh admin@orca-cliente-a --zone us-central1-a --project bove-orca --tunnel-through-iap \
+gcloud compute ssh orca-admin@orca-cliente-a --zone us-central1-a --project bove-orca --tunnel-through-iap \
   --command 'sudo -u orca -H bash -lc "claude --version; orca-ide account list"'
 ```
 
@@ -280,7 +281,7 @@ no pegar correos).
    30 minutos”. Hacerlo dentro del horario 08:00-21:00 (si no, el apagado programado mata la prueba).
 2. Anotar la hora y el PID:
    ```bash
-   gcloud compute ssh admin@orca-cliente-a --zone us-central1-a --project bove-orca --tunnel-through-iap \
+   gcloud compute ssh orca-admin@orca-cliente-a --zone us-central1-a --project bove-orca --tunnel-through-iap \
      --command 'pgrep -u orca -af claude; date -u'
    ```
 3. **Cerrar la laptop** (suspender) ≥ 10 min. Con la laptop cerrada, desde otro dispositivo o desde el mismo Mac
@@ -303,7 +304,7 @@ viven en el servidor; hay que confirmarlo con esta prueba.)
 ## 6. `orca` no puede usar sudo
 
 ```bash
-gcloud compute ssh admin@orca-cliente-a --zone us-central1-a --project bove-orca --tunnel-through-iap --command '
+gcloud compute ssh orca-admin@orca-cliente-a --zone us-central1-a --project bove-orca --tunnel-through-iap --command '
   sudo -n -u orca -H sudo -n true; echo "exit=$?"
   id -nG orca
   sudo -n -l -U orca'
@@ -326,7 +327,7 @@ sesión de agente en Orca: `sudo -n true` debe fallar.
 Se revisan **nombres**, nunca valores.
 
 ```bash
-gcloud compute ssh admin@orca-cliente-a --zone us-central1-a --project bove-orca --tunnel-through-iap --command '
+gcloud compute ssh orca-admin@orca-cliente-a --zone us-central1-a --project bove-orca --tunnel-through-iap --command '
   H=/home/orca
   echo "--- gh:";      sudo -u orca -H gh auth status 2>&1 | sed -E "s/(Token: ).*/\1<oculto>/"
   echo "--- ~/.claude:"; sudo ls -la $H/.claude 2>&1 | head -20
@@ -374,7 +375,7 @@ gcloud projects get-iam-policy bove-orca --flatten="bindings[].members" \
   --filter="bindings.members=serviceAccount:orca-vm-cliente-a@bove-orca.iam.gserviceaccount.com" \
   --format="value(bindings.role)"
 # Log de arranque sin secretos
-gcloud compute ssh admin@orca-cliente-a --zone us-central1-a --project bove-orca --tunnel-through-iap \
+gcloud compute ssh orca-admin@orca-cliente-a --zone us-central1-a --project bove-orca --tunnel-through-iap \
   --command 'sudo grep -Eic "tskey-|ghp_|github_pat_|sk-ant-|pairing" /var/log/orca-startup.log; sudo tail -n 10 /var/log/orca-startup.log'
 
 # 8.2 Horario y snapshots

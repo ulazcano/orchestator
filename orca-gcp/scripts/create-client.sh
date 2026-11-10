@@ -126,7 +126,7 @@ main() {
     --shielded-vtpm \
     --shielded-integrity-monitoring \
     --labels="$LABEL" \
-    --metadata="client=${CLIENT},orca-version=${ORCA_VERSION}" \
+    --metadata="client=${CLIENT},orca-version=${ORCA_VERSION},block-project-ssh-keys=TRUE" \
     --metadata-from-file="startup-script=${STARTUP_SCRIPT}"
 
   label_disk
@@ -191,7 +191,7 @@ EOF
 La VM espera la key hasta ~10 min tras el arranque. Si ya pasó ese tiempo, vuelve a
 ejecutar el startup script por IAP (como admin):
 
-   gcloud compute ssh admin@${VM_NAME} --zone=${ZONE} --project=${PROJECT_ID} --tunnel-through-iap \\
+   gcloud compute ssh ${ADMIN_USER}@${VM_NAME} --zone=${ZONE} --project=${PROJECT_ID} --tunnel-through-iap \\
      --command='sudo google_metadata_script_runner startup'
 
 Progreso (sin secretos): sudo cat ${STARTUP_LOG}

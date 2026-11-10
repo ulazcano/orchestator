@@ -24,7 +24,7 @@ IMAGE_FAMILY="ubuntu-2404-lts-amd64"
 IMAGE_PROJECT="ubuntu-os-cloud"
 ORCA_PORT="6768"
 ORCA_USER="orca"
-ADMIN_USER="admin"
+ADMIN_USER="orca-admin"
 STARTUP_LOG="/var/log/orca-startup.log"
 
 # Binario de gcloud; las pruebas lo sustituyen por un stub (nunca llama a GCP real).

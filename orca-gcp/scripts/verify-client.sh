@@ -18,7 +18,7 @@ IAP_RANGE="35.235.240.0/20"
 FW_RULE_IAP="orca-allow-iap-ssh"
 ORCA_PORT="6768"
 ORCA_USER="orca"
-ADMIN_USER="admin"
+ADMIN_USER="orca-admin"
 STARTUP_LOG="/var/log/orca-startup.log"
 SCHEDULE_START_CRON="0 8 * * 1-5"
 SCHEDULE_STOP_CRON="0 21 * * 1-5"
@@ -154,9 +154,10 @@ echo "== Verificación de ${VM_NAME} (proyecto ${PROJECT_ID}, zona ${ZONE}) =="
 ((DRY_RUN)) && echo "(dry-run: se imprimen los comandos; no se ejecuta nada)"
 
 # --- 1. Firewall -------------------------------------------------------------
+# La API rechaza 'disabled=false' en el filtro del servidor: se filtra en local (columna disabled).
 fw_rules=$(gq compute firewall-rules list --project "$PROJECT_ID" \
-  --filter="network~/${NETWORK}\$ AND direction=INGRESS AND disabled=false" \
-  --format='value(name)' || true)
+  --filter="network~/${NETWORK}\$ AND direction=INGRESS" \
+  --format='value(name,disabled)' | awk '$2 != "True" {print $1}' || true)
 if ((DRY_RUN)); then
   record SKIP FW-01 "Solo existe la regla de ingreso ${FW_RULE_IAP} en ${NETWORK}"
 elif [[ "$fw_rules" == "$FW_RULE_IAP" ]]; then
@@ -279,15 +280,16 @@ if ((DRY_RUN)) || [[ -n "$vm_status" ]]; then
   meta_keys=$(desc_vm 'value(metadata.items[].key)')
   meta_vals=$(desc_vm 'value(metadata.items[].value)')
   if ((DRY_RUN)); then
-    record SKIP META-01 "Metadata solo con client, orca-version, startup-script"
+    record SKIP META-01 "Metadata solo con client, orca-version, startup-script, block-project-ssh-keys"
     record SKIP META-02 "Metadata y script sin patrones de secretos"
   else
     extra=""
     for k in $(printf '%s' "$meta_keys" | tr ';,' '  '); do
-      case "$k" in client | orca-version | startup-script) ;; *) extra+="$k " ;; esac
+      # ssh-keys en la instancia es consecuencia de block-project-ssh-keys (gcloud compute ssh deja ahí la llave pública).
+      case "$k" in client | orca-version | startup-script | block-project-ssh-keys | ssh-keys) ;; *) extra+="$k " ;; esac
     done
     if [[ -z "$extra" ]]; then
-      record PASS META-01 "Metadata solo con client, orca-version, startup-script"
+      record PASS META-01 "Metadata solo con client, orca-version, startup-script, block-project-ssh-keys (y ssh-keys de la instancia)"
     elif [[ "$extra" =~ ^(enable-oslogin\ ?)+$ ]]; then
       record WARN META-01 "Metadata incluye ${extra}(permitido solo para OS Login; el contrato fija 3 claves)"
     else
