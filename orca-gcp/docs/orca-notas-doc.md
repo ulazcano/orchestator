@@ -65,3 +65,14 @@ Los remote servers están en **beta**: todo esto puede cambiar. Cuando la doc y 
     Si el proyecto fuerza OS Login, `admin` no se usa y el acceso es con la identidad Google (rol `roles/compute.osAdminLogin`).
     Nunca entrar como `orca` por gcloud: el agente de invitado de GCE lo agregaría a `google-sudoers` (el script lo neutraliza con
     `/etc/sudoers.d/zz-orca-nosudo`, pero es mejor no depender de eso).
+
+11. **Unidad systemd y corte duro (observado en la VM piloto, 2026-11-10):** `orca-ide serve service install` crea
+    `~/.config/systemd/user/orca-serve.service` (`orca-ide serve --supervise --no-pairing --port 6768`, `Restart=on-failure`)
+    y escribe varios archivos en `~/.config/orca`. Un `gcloud compute instances reset` 45 s después dejó todos esos archivos
+    en **0 bytes** (ext4 no había vaciado los datos): la unidad vacía aparece como *masked* y `serve` falla con
+    `agent_session_ownership_unknown`. El supervisor se rinde tras 6 fallos en 15 min. Reinicia solo con `sudo reboot`
+    o `gcloud compute instances stop/start`; el startup ahora verifica en cada arranque que el servicio esté activo y
+    escuchando, y lo repara borrando únicamente archivos vacíos.
+12. **Arranque de `serve` en headless:** imprime `using Electron serve: orcad did not answer its native preflight` y errores
+    de D-Bus de Chromium; son inofensivos. El servidor queda `Bound endpoint: ws://0.0.0.0:6768`.
+

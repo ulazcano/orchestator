@@ -253,18 +253,62 @@ step_claude() {
 }
 
 # --- Servicio de Orca (systemd de usuario de orca) ---------------------------
+ORCA_UNIT="orca-serve.service"   # nombre que crea `orca-ide serve service install` (observado; la doc no lo fija)
+
+orca_listening() { ss -ltnH "( sport = :${ORCA_PORT} )" 2>/dev/null | grep -q .; }
+
+# CHECK de run_step: 0 solo si la unidad existe con contenido, está activa y escucha en el puerto.
+# Se evalúa en cada arranque: así el servicio se repara solo si quedó roto. Caso real en la VM piloto:
+# un `gcloud compute instances reset` (corte duro) dejó en 0 bytes la unidad y los archivos de
+# ~/.config/orca que Orca acababa de escribir -> unidad "masked" y "agent_session_ownership_unknown".
+# Reinicia siempre con `sudo reboot` o stop/start, nunca con reset.
+orca_service_ok() {
+  skip_flag ORCA_SKIP_SERVICE && return 1
+  id "$ORCA_USER" >/dev/null 2>&1 || return 1
+  [[ -s "/home/${ORCA_USER}/.config/systemd/user/${ORCA_UNIT}" ]] || return 1
+  as_orca systemctl --user is-active --quiet "$ORCA_UNIT" 2>/dev/null || return 1
+  orca_listening
+}
+
+wait_orca_service() { # wait_orca_service SEGUNDOS: espera a que el servicio quede OK
+  local waited=0
+  while [[ $waited -lt "$1" ]]; do
+    orca_service_ok && return 0
+    sleep 5; waited=$((waited + 5))
+  done
+  return 1
+}
+
 step_orca_service() {
   skip_flag ORCA_SKIP_SERVICE && { echo "ORCA_SKIP_SERVICE=1: sin registrar el servicio"; return 0; }
-  local uid unit; uid="$(id -u "$ORCA_USER")"
+  local uid; uid="$(id -u "$ORCA_USER")"
   systemctl start "user@${uid}.service"
   # El bus de usuario tarda un momento en aparecer.
   local waited=0
   while [[ ! -S "/run/user/${uid}/bus" && $waited -lt 30 ]]; do sleep 1; waited=$((waited + 1)); done
+
+  # Arranque normal: la unidad existe y solo necesita tiempo para levantar. No se toca nada.
+  if [[ -s "/home/${ORCA_USER}/.config/systemd/user/${ORCA_UNIT}" ]] && wait_orca_service 90; then
+    echo "servicio ${ORCA_UNIT} activo y escuchando en ${ORCA_PORT}"
+    return 0
+  fi
+
+  # Instalación inicial o reparación. Solo se borran archivos de 0 bytes: los que tienen contenido
+  # (grants de pareo, llaves) nunca se tocan.
+  as_orca systemctl --user stop "$ORCA_UNIT" 2>/dev/null || true
+  as_orca orca-ide serve service uninstall 2>/dev/null || true
+  as_orca systemctl --user unmask "$ORCA_UNIT" 2>/dev/null || true
+  find "/home/${ORCA_USER}/.config/orca" "/home/${ORCA_USER}/.local/bin" "/home/${ORCA_USER}/.config/systemd" \
+    -maxdepth 2 -type f -empty -not -name '*-journal' -delete 2>/dev/null || true
+
   as_orca orca-ide serve service install --port "$ORCA_PORT"
-  # Que quede habilitado (idempotente). El nombre exacto de la unidad lo decide Orca.
-  while read -r unit; do
-    if [[ -n "$unit" ]]; then as_orca systemctl --user enable --now "$unit"; fi
-  done < <(as_orca systemctl --user list-unit-files --type=service --no-legend 2>/dev/null | awk '/orca/ {print $1}')
+  as_orca systemctl --user enable "$ORCA_UNIT"
+  sync   # la unidad y los archivos de Orca deben llegar al disco antes de seguir
+  if ! wait_orca_service 90; then
+    echo "ERROR: ${ORCA_UNIT} no quedó activo escuchando en ${ORCA_PORT}. Últimas líneas del journal:" >&2
+    as_orca journalctl --user -u "$ORCA_UNIT" --no-pager -n 20 -o cat >&2 || true
+    return 1
+  fi
   as_orca orca-ide serve service status
 }
 
@@ -337,7 +381,7 @@ main() {
   if skip_flag ORCA_SKIP_CLAUDE; then mark SKIP "claude-code (ORCA_SKIP_CLAUDE=1)"
   else run_step claude-code step_claude; fi
   if skip_flag ORCA_SKIP_ORCA; then mark SKIP "orca-service (ORCA_SKIP_ORCA=1)"
-  else run_step "orca-service-${ORCA_PORT}" step_orca_service; fi
+  else run_step "orca-service-${ORCA_PORT}" step_orca_service orca_service_ok; fi
   if skip_flag ORCA_SKIP_TAILSCALE || skip_flag ORCA_SKIP_GCP; then
     mark SKIP "tailscale-up (omitido por variable)"
   else
@@ -348,6 +392,7 @@ main() {
     mark FAIL "startup pasos=${FAILED_STEPS[*]}"
     exit 1
   fi
+  sync
   mark OK "startup"
 }
 

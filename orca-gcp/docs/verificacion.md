@@ -193,7 +193,7 @@ si no hay *lingering*. La doc **no documenta** `service start/stop`; solo `insta
 
 ```bash
 # 1) Antes: anotar la hora de arranque y el estado (comando de 3.1)
-# 2) Reiniciar (admin con sudo):
+# 2) Reiniciar (orca-admin con sudo). Nunca `gcloud compute instances reset`: es un corte duro y deja archivos en 0 bytes.
 gcloud compute ssh orca-admin@orca-cliente-a --zone us-central1-a --project bove-orca --tunnel-through-iap --command 'sudo reboot'
 # 3) Esperar ~2 min y repetir el comando de 3.1, o:
 ./orca-gcp/scripts/verify-client.sh cliente-a        # SVC-01, SVC-02 y SVC-03 (hora de arranque nueva)
