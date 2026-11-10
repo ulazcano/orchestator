@@ -3,6 +3,7 @@
   ok   bash -n create-client.sh
   ok   bash -n destroy-client.sh
   ok   bash -n lib.sh
+  ok   bash -n schedule-client.sh
   ok   bash -n verify-client.sh
   ok   bash -n vm-startup.sh
   ok   bash -n run-startup-container.sh
@@ -13,6 +14,7 @@
   ok   shellcheck create-client.sh
   ok   shellcheck destroy-client.sh
   ok   shellcheck lib.sh
+  ok   shellcheck schedule-client.sh
   ok   shellcheck verify-client.sh
   ok   shellcheck vm-startup.sh
   ok   shellcheck run-startup-container.sh
@@ -182,4 +184,4 @@
 Resultado contenedor: 65 ok, 0 fallos
   ok   prueba de contenedor
 
-Resultado: 78 ok, 0 fallos
+Resultado: 80 ok, 0 fallos
