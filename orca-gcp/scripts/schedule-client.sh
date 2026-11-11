@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# schedule-client.sh — horario de encendido/apagado, snapshots diarios y presupuesto de un cliente.
+# schedule-client.sh — snapshots diarios, presupuesto y (opcional) horario de encendido/apagado de un cliente.
 #
 # Uso:
-#   schedule-client.sh <slug> [--on HH:MM] [--off HH:MM] [--tz America/Santiago]
+#   schedule-client.sh <slug> [--auto-shutdown [--on HH:MM] [--off HH:MM] [--tz America/Santiago]]
 #                      [--budget-amount N] [--snapshot-time HH:00] [--yes] [--dry-run]
 #
 # Crea (si no existen) y adjunta:
-#   - instance-schedule  orca-horario-<slug>    -> VM orca-<slug>   (08:00 on / 21:00 off, lun-vie)
+#   - instance-schedule  orca-horario-<slug>    -> VM orca-<slug>   SOLO con --auto-shutdown (08:00 on / 21:00 off, lun-vie)
 #   - snapshot-schedule  orca-snapshots-<slug>  -> disco de la VM   (diario, retención 7 días)
 #   - presupuesto        orca-presupuesto-<slug> en la cuenta de facturación (alertas 50/80/100 %)
 #
@@ -15,7 +15,8 @@
 #   BUDGET_CURRENCY     opcional, p. ej. USD; si falta se usa la moneda de la cuenta de facturación
 #   PROJECT_ID          por defecto bove-orca
 #
-# No contiene ni imprime secretos. Ver orca-gcp/README.md para el prerequisito de IAM
+# Por defecto la VM queda encendida 24/7 (sin horario). El horario es opt-in con --auto-shutdown.
+# No contiene ni imprime secretos. Con --auto-shutdown ver orca-gcp/README.md para el prerequisito de IAM
 # (Compute Engine Service Agent con roles/compute.instanceAdmin.v1).
 set -euo pipefail
 
@@ -35,15 +36,17 @@ BILLING_ACCOUNT_ID="${BILLING_ACCOUNT_ID:-}"
 BUDGET_CURRENCY="${BUDGET_CURRENCY:-}"
 DRY_RUN=0
 ASSUME_YES=0
+AUTO_SHUTDOWN=0
 CLIENT=""
 
 usage() {
   cat <<'EOF'
 Uso: schedule-client.sh <slug> [opciones]
 
-  --on HH:MM            encendido (por defecto 08:00)
-  --off HH:MM           apagado (por defecto 21:00)
-  --tz ZONA             zona IANA (por defecto America/Santiago)
+  --auto-shutdown       crear y adjuntar el horario de encendido/apagado (por defecto NO: VM 24/7)
+  --on HH:MM            encendido (por defecto 08:00; solo con --auto-shutdown)
+  --off HH:MM           apagado (por defecto 21:00; solo con --auto-shutdown)
+  --tz ZONA             zona IANA (por defecto America/Santiago; solo con --auto-shutdown)
   --budget-amount N     monto mensual del presupuesto; requiere BILLING_ACCOUNT_ID
   --snapshot-time HH:00 hora UTC del snapshot diario (por defecto 06:00)
   --yes                 no pedir confirmación
@@ -63,6 +66,7 @@ while [[ $# -gt 0 ]]; do
     -h|--help) usage; exit 0 ;;
     --dry-run) DRY_RUN=1; shift ;;
     --yes) ASSUME_YES=1; shift ;;
+    --auto-shutdown) AUTO_SHUTDOWN=1; shift ;;
     --on) [[ $# -ge 2 ]] || die "--on requiere HH:MM"; ON_TIME="$2"; shift 2 ;;
     --off) [[ $# -ge 2 ]] || die "--off requiere HH:MM"; OFF_TIME="$2"; shift 2 ;;
     --tz) [[ $# -ge 2 ]] || die "--tz requiere una zona IANA"; TIMEZONE="$2"; shift 2 ;;
@@ -139,8 +143,12 @@ GCLOUD=(gcloud --project="$PROJECT_ID")
 
 # ---------- Plan ----------
 echo "== Plan para el cliente '${CLIENT}' (proyecto ${PROJECT_ID}) =="
-echo "  Horario    : ${SCHEDULE_NAME}  encendido ${ON_TIME}, apagado ${OFF_TIME}, lun-vie, ${TIMEZONE}"
-echo "               cron start='${START_CRON}'  stop='${STOP_CRON}'  -> VM ${VM_NAME} (${ZONE})"
+if (( AUTO_SHUTDOWN )); then
+  echo "  Horario    : ${SCHEDULE_NAME}  encendido ${ON_TIME}, apagado ${OFF_TIME}, lun-vie, ${TIMEZONE}"
+  echo "               cron start='${START_CRON}'  stop='${STOP_CRON}'  -> VM ${VM_NAME} (${ZONE})"
+else
+  echo "  Horario    : (omitido: VM encendida 24/7; usa --auto-shutdown para programarlo)"
+fi
 echo "  Snapshots  : ${SNAPSHOT_POLICY}  diario ${SNAPSHOT_TIME_UTC} UTC, retención ${RETENTION_DAYS} días, ubicación ${REGION}"
 if [[ -n "$BUDGET_AMOUNT" ]]; then
   echo "  Presupuesto: ${BUDGET_NAME}  ${BUDGET_AMOUNT}${BUDGET_CURRENCY}/mes, alertas 50/80/100 %, filtro ${LABEL}"
@@ -152,22 +160,26 @@ echo
 confirm
 
 # ---------- 1. Instance schedule ----------
-echo "-- 1/3 instance-schedule ${SCHEDULE_NAME}"
-if exists "${GCLOUD[@]}" compute resource-policies describe "$SCHEDULE_NAME" --region="$REGION"; then
-  echo "   ya existe; se conserva (para cambiar horas: gcloud compute resource-policies update instance-schedule ...)"
+if (( ! AUTO_SHUTDOWN )); then
+  echo "-- 1/3 instance-schedule: omitido (VM 24/7; usa --auto-shutdown para crearlo)"
 else
-  run "${GCLOUD[@]}" compute resource-policies create instance-schedule "$SCHEDULE_NAME" \
-    --region="$REGION" \
-    --vm-start-schedule="$START_CRON" \
-    --vm-stop-schedule="$STOP_CRON" \
-    --timezone="$TIMEZONE" \
-    --description="Horario laboral de ${VM_NAME}"
-fi
-if attached "$SCHEDULE_NAME" compute instances describe "$VM_NAME" --zone="$ZONE"; then
-  echo "   ya adjunto a ${VM_NAME}"
-else
-  run "${GCLOUD[@]}" compute instances add-resource-policies "$VM_NAME" \
-    --zone="$ZONE" --resource-policies="$SCHEDULE_NAME"
+  echo "-- 1/3 instance-schedule ${SCHEDULE_NAME}"
+  if exists "${GCLOUD[@]}" compute resource-policies describe "$SCHEDULE_NAME" --region="$REGION"; then
+    echo "   ya existe; se conserva (para cambiar horas: gcloud compute resource-policies update instance-schedule ...)"
+  else
+    run "${GCLOUD[@]}" compute resource-policies create instance-schedule "$SCHEDULE_NAME" \
+      --region="$REGION" \
+      --vm-start-schedule="$START_CRON" \
+      --vm-stop-schedule="$STOP_CRON" \
+      --timezone="$TIMEZONE" \
+      --description="Horario laboral de ${VM_NAME}"
+  fi
+  if attached "$SCHEDULE_NAME" compute instances describe "$VM_NAME" --zone="$ZONE"; then
+    echo "   ya adjunto a ${VM_NAME}"
+  else
+    run "${GCLOUD[@]}" compute instances add-resource-policies "$VM_NAME" \
+      --zone="$ZONE" --resource-policies="$SCHEDULE_NAME"
+  fi
 fi
 
 # ---------- 2. Snapshots ----------
@@ -229,5 +241,8 @@ else
 fi
 
 echo
-echo "Listo. Recordatorio: el Compute Engine Service Agent necesita roles/compute.instanceAdmin.v1"
-echo "en el proyecto para que el horario encienda/apague la VM (ver orca-gcp/README.md)."
+echo "Listo."
+if (( AUTO_SHUTDOWN )); then
+  echo "Recordatorio: el Compute Engine Service Agent necesita roles/compute.instanceAdmin.v1"
+  echo "en el proyecto para que el horario encienda/apague la VM (ver orca-gcp/README.md)."
+fi

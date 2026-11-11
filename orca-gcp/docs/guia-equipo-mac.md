@@ -52,7 +52,7 @@ Esperado: `Connection to 100.80.185.107 port 6768 [tcp/*] succeeded!`.
 Si dice `Operation timed out` o `Connection refused`:
 
 - Tailscale no está conectado, o estás con otra cuenta → paso 1.
-- La VM está apagada: se enciende sola de **08:00 a 21:00 (hora de Chile), lunes a viernes**. Fuera de ese horario pide al dueño que la encienda.
+- La VM está apagada: está pensada para estar encendida 24/7. Avisa al dueño para que la encienda.
 - Tu usuario no está en la ACL → avisa al dueño.
 
 ## 3. Instalar Orca 1.4.251
@@ -102,7 +102,7 @@ Si el link no funciona: cada link sirve una sola vez y el dueño lo genera en el
 Ten en cuenta:
 
 - **Las credenciales son del servidor, no tuyas.** Los commits salen con la identidad de git configurada en la VM y los agentes usan la cuenta de Claude del servidor. Si necesitas tu propia identidad en los commits, pídeselo al dueño.
-- **Horario.** La VM se apaga a las 21:00 y se enciende a las 08:00 (hora de Chile, lunes a viernes). Un agente en curso a las 21:00 se corta.
+- **Encendido.** La VM está encendida 24/7 (sin apagado automático); solo se apaga por mantenimiento o si el dueño la detiene.
 - **Un solo servidor para el equipo.** Todos ven los mismos proyectos y worktrees; usa nombres de rama con tu usuario para no pisarte con otros.
 
 ## Problemas frecuentes
@@ -110,7 +110,7 @@ Ten en cuenta:
 | Síntoma | Causa probable | Qué hacer |
 |---|---|---|
 | El servidor no aparece en `tailscale status` | No estás en el tailnet de la empresa, o no estás en la ACL | Revisa la cuenta de Tailscale; avisa al dueño |
-| `nc` da timeout | VM apagada o sin ACL | Horario; dueño |
+| `nc` da timeout | VM apagada o sin ACL | Avisar al dueño |
 | **Disconnected** tras estar conectado | Tailscale se desconectó o la VM se reinició | Comprueba Tailscale; pulsa **Connect** |
 | "incompatible protocol version" | Tu Orca se actualizó y el servidor no | Avisa al dueño; no intentes bajar de versión |
 | El link de pareo no sirve | Ya se usó, o el dueño generó otro después | Pide un link nuevo |

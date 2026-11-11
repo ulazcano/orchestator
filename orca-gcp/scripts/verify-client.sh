@@ -203,7 +203,7 @@ elif [[ "$vm_status" == "RUNNING" ]]; then
 elif [[ -z "$vm_status" ]]; then
   record FAIL VM-01 "La VM ${VM_NAME} no existe (o sin permisos)"
 else
-  record FAIL VM-01 "La VM está ${vm_status} (¿fuera de horario 08:00-21:00 lun-vie?). Enciéndela a mano y reintenta"
+  record FAIL VM-01 "La VM está ${vm_status} (¿apagada a mano o por un horario?). Enciéndela y reintenta"
 fi
 
 desc_vm() { gq compute instances describe "$VM_NAME" --zone "$ZONE" --project "$PROJECT_ID" --format="$1" || true; }
@@ -248,8 +248,14 @@ if ((DRY_RUN)) || [[ -n "$vm_status" ]]; then
   disk_pol=$(gq compute disks describe "${disk_name:-DISCO}" --zone "$ZONE" --project "$PROJECT_ID" --format='value(resourcePolicies.list())' || true)
   if ((DRY_RUN)); then
     record SKIP POL-01 "Adjuntas: ${SCHEDULE_NAME} (VM) y ${SNAPSHOT_POLICY} (disco)"
-  elif printf '%s' "$vm_pol" | grep -Fq "/${SCHEDULE_NAME}" && printf '%s' "$disk_pol" | grep -Fq "/${SNAPSHOT_POLICY}"; then
-    record PASS POL-01 "Adjuntas: ${SCHEDULE_NAME} (VM) y ${SNAPSHOT_POLICY} (disco)"
+  elif printf '%s' "$disk_pol" | grep -Fq "/${SNAPSHOT_POLICY}" \
+       && { [[ -z "$vm_pol" ]] || printf '%s' "$vm_pol" | grep -Fq "/${SCHEDULE_NAME}"; }; then
+    # El horario es opcional (VM 24/7 por defecto): sin política en la VM es válido.
+    if [[ -z "$vm_pol" ]]; then
+      record PASS POL-01 "Snapshots adjuntos al disco (${SNAPSHOT_POLICY}); VM sin horario (24/7)"
+    else
+      record PASS POL-01 "Adjuntas: ${SCHEDULE_NAME} (VM) y ${SNAPSHOT_POLICY} (disco)"
+    fi
   else
     record FAIL POL-01 "Políticas no adjuntas como se espera" \
       "VM=$(printf '%s' "$vm_pol" | tr ',' ' ' | sed 's#[^ ]*/##g')" \
@@ -264,7 +270,9 @@ if ((DRY_RUN)) || [[ -n "$vm_status" ]]; then
   if ((DRY_RUN)); then
     record SKIP POL-02 "Horario ${SCHEDULE_START_CRON} on / ${SCHEDULE_STOP_CRON} off (${SCHEDULE_TZ}); snapshots diarios, retención ${SNAPSHOT_RETENTION_DAYS} d"
   else
-    if [[ "$sched" == "$sched_expected" ]]; then
+    if [[ -z "$vm_pol" ]]; then
+      record SKIP POL-02 "Sin horario de encendido/apagado: VM 24/7 (opcional, ver schedule-client.sh --auto-shutdown)"
+    elif [[ "$sched" == "$sched_expected" ]]; then
       record PASS POL-02 "Horario ${SCHEDULE_START_CRON} on / ${SCHEDULE_STOP_CRON} off (${SCHEDULE_TZ})"
     else
       record FAIL POL-02 "Horario distinto del esperado o inexistente" "obtenido: $(printf '%s' "$sched" | tr '\t' '|')"

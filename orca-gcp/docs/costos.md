@@ -17,6 +17,8 @@ Fecha de la estimación: **2026-11-09**. Son valores de lista (on-demand), sin d
 | Cloud NAT (público) | **$0.0014 / hora por VM** + **$0.005 / hora por IP de la pasarela** + **$0.045 / GiB** procesado | [Cloud NAT pricing](https://cloud.google.com/nat/pricing) (oficial) |
 | IOPS/throughput por defecto de un disco de 200 GiB | 4.200 IOPS y 440 MiB/s (fórmulas `6x+3000` y `min(2400, 1.5x+140)`); gratis solo 3.000 IOPS y 140 MiB/s | [Hyperdisk Balanced](https://docs.cloud.google.com/compute/docs/disks/hd-types/hyperdisk-balanced) (oficial) |
 
+> **Estado actual (2026-11-11):** `orca-cliente-a` corre 24/7 (escenario A); el horario se quitó a propósito. `schedule-client.sh` lo crea solo con `--auto-shutdown`. Los escenarios B y C siguen como referencia.
+
 Supuestos de cálculo: mes = 730 h; días hábiles por mes = 260/12 ≈ 21,67; el disco y los snapshots se cobran **siempre**, aunque la VM esté apagada; una IP efímera solo se cobra mientras la VM corre.
 
 ### Hallazgo: el disco por defecto cuesta más del doble
