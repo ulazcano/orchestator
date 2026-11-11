@@ -22,7 +22,7 @@ Detalles fijos (contratos del plan): proyecto `bove-orca`, `us-central1-a`, red 
 |---|---|---|
 | `scripts/bootstrap-project.sh` | Base del proyecto (APIs, red, firewall IAP) | 0 |
 | `scripts/create-client.sh` · `vm-startup.sh` · `destroy-client.sh` · `lib.sh` | Crear / destruir un cliente | 1 |
-| `scripts/schedule-client.sh` | Horario on/off, snapshots y presupuesto | 2 |
+| `scripts/schedule-client.sh` | Snapshots y presupuesto; horario on/off solo con `--auto-shutdown` | 2 |
 | `scripts/verify-client.sh` · `docs/verificacion.md` | Checklist de la Fase 5 | 3 |
 | [`docs/pasos-manuales.md`](docs/pasos-manuales.md) | Lo que hace el dueño (Tailscale, logins, pareo) | 2 |
 | [`docs/costos.md`](docs/costos.md) | Estimación mensual y diseño de auto-apagado | 2 |
@@ -34,24 +34,25 @@ Detalles fijos (contratos del plan): proyecto `bove-orca`, `us-central1-a`, red 
 Prerrequisito único por proyecto: `bootstrap-project.sh` ya ejecutado (facturación vinculada por el dueño, APIs, VPC, regla IAP).
 
 ```bash
-# 1. Un comando: VM + secreto + horario/snapshots (+ presupuesto opcional)
+# 1. Un comando: VM + secreto (+ snapshots/presupuesto con schedule-client.sh)
 export ORCA_VERSION=<la misma versión que tu Mac>
 orca-gcp/scripts/create-client.sh <slug> --dry-run      # revisar primero
 orca-gcp/scripts/create-client.sh <slug>
 ```
 
-`create-client.sh` (workspace 1) crea la VM y el secreto vacío y debe terminar llamando a `schedule-client.sh <slug>` para adjuntar horario y snapshots. *(TODO workspace 1: invocarlo; hasta entonces, ejecútalo a mano como abajo.)*
+`create-client.sh` (workspace 1) crea la VM y el secreto vacío y debe terminar llamando a `schedule-client.sh <slug>` para adjuntar los snapshots (y el horario si se pide). *(TODO workspace 1: invocarlo; hasta entonces, ejecútalo a mano como abajo.)*
 
 ```bash
-# Horario 08:00-21:00 lun-vie (America/Santiago) + snapshots diarios 7 días [+ presupuesto]
+# Snapshots diarios 7 días [+ presupuesto]. La VM queda encendida 24/7 (sin apagado automático).
+# Para apagarla de noche: añade --auto-shutdown (08:00-21:00 lun-vie, America/Santiago).
 orca-gcp/scripts/schedule-client.sh <slug> --dry-run
 BILLING_ACCOUNT_ID=<id-que-eliges-tu> orca-gcp/scripts/schedule-client.sh <slug> --budget-amount 150
-#   opciones: --on HH:MM --off HH:MM --tz <zona> --budget-amount N --snapshot-time HH:00 --yes
+#   opciones: --auto-shutdown --on HH:MM --off HH:MM --tz <zona> --budget-amount N --snapshot-time HH:00 --yes
 ```
 
 Después, los **pasos manuales** de [`docs/pasos-manuales.md`](docs/pasos-manuales.md), en orden: (1) auth key de Tailscale con tag y ACL → Secret Manager; (2) SSH por IAP; (3) logins de Claude/Codex; (4) `gh auth login` con token fine-grained; (5) pareo (`orca-ide serve --port 6768 --pairing-address <IP-Tailscale>`) y alta en *Settings → Remote Orca Servers → Add Server*; (6) opcional móvil; (7) clonar repos en `~/projects`.
 
-### Prerrequisito de IAM para el horario
+### Prerrequisito de IAM para el horario (solo con `--auto-shutdown`)
 
 El `instance-schedule` enciende y apaga la VM con el **Compute Engine Service Agent** del proyecto, que debe tener `roles/compute.instanceAdmin.v1` ([doc](https://docs.cloud.google.com/compute/docs/instances/schedule-instance-start-stop)). Una vez por proyecto, con un usuario con permisos de IAM (no lo ejecuta ningún agente sin tu confirmación):
 

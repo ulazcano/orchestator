@@ -48,7 +48,7 @@ Test-NetConnection 100.80.185.107 -Port 6768
 Esperado: `TcpTestSucceeded : True`. Si es `False`:
 
 - Tailscale no está conectado o estás con otra cuenta → paso 1.
-- La VM está apagada: funciona de **08:00 a 21:00 (hora de Chile), lunes a viernes**. Fuera de ese horario, pide al dueño que la encienda.
+- La VM está apagada: está pensada para estar encendida 24/7. Avisa al dueño para que la encienda.
 - Tu usuario no está en la ACL → avisa al dueño.
 
 ## 3. Instalar Orca 1.4.251
@@ -89,14 +89,14 @@ Si el link no funciona, pide uno nuevo mientras estás delante de Orca: cada lin
 4. Crea un worktree y lanza un agente. Corre en la VM: puedes apagar o suspender el PC y al volver sigue.
 5. Las terminales que abras desde Orca son terminales Linux (`bash`) en la VM como usuario `orca`, sin permisos de administrador. Los comandos son los de Linux, no PowerShell.
 
-Ten en cuenta lo mismo que en macOS: las credenciales (git, Claude) son las del servidor, la VM se apaga a las 21:00 y todo el equipo comparte los mismos proyectos.
+Ten en cuenta lo mismo que en macOS: las credenciales (git, Claude) son las del servidor, todo el equipo comparte los mismos proyectos.
 
 ## Problemas frecuentes
 
 | Síntoma | Causa probable | Qué hacer |
 |---|---|---|
 | `tailscale status` no muestra el servidor | No estás en el tailnet o en la ACL | Revisa la cuenta; avisa al dueño |
-| `TcpTestSucceeded : False` | VM apagada o sin ACL | Horario; dueño |
+| `TcpTestSucceeded : False` | VM apagada o sin ACL | Avisar al dueño |
 | **Disconnected** | Tailscale se cayó o la VM se reinició | Icono de Tailscale → Connected; en Orca, **Connect** |
 | "incompatible protocol version" | Tu Orca se actualizó y el servidor no | Avisa al dueño |
 | El link de pareo no sirve | Ya usado o reemplazado | Pide uno nuevo |
